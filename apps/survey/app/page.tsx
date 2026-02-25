@@ -336,7 +336,8 @@ function formatAnswer(v: SurveyAnswerValue | undefined): string {
 /** Scoring uses actual survey question keys and option values. Returns top 3 platform recommendations. */
 function computeRecommendation(answers: SurveyAnswers): { platform: string; rationale: string }[] {
   const categories = ['headless-cms', 'wordpress', 'webflow', 'hubspot-cms', 'contentful'] as const
-  const scores: Record<string, number> = { 'headless-cms': 0, wordpress: 0, webflow: 0, 'hubspot-cms': 0, contentful: 0 }
+  type ScoreKey = (typeof categories)[number]
+  const scores: Record<ScoreKey, number> = { 'headless-cms': 0, wordpress: 0, webflow: 0, 'hubspot-cms': 0, contentful: 0 }
 
   // Editor autonomy: technical-comfort-level
   const technicalComfort = answers['technical-comfort-level']
@@ -473,7 +474,7 @@ function computeRecommendation(answers: SurveyAnswers): { platform: string; rati
     contentful: 'Scale, structure, and integration needs align with Contentful.',
   }
 
-  const sorted = (categories as unknown as string[])
+  const sorted = [...categories]
     .map((c) => ({ platform: c, score: scores[c] ?? 0 }))
     .sort((a, b) => b.score - a.score)
 

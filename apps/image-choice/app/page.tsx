@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@repo/ui'
@@ -9,7 +9,7 @@ import { getMediaUrl, instructionsToText } from './types'
 
 type Phase = 'loading' | 'list' | 'instructions' | 'pair' | 'done' | 'error'
 
-export default function ImageChoicePage() {
+function ImageChoicePageContent() {
   const searchParams = useSearchParams()
   const assessmentId = searchParams.get('assessment')
 
@@ -245,4 +245,18 @@ export default function ImageChoicePage() {
   }
 
   return null
+}
+
+export default function ImageChoicePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
+          <p className="text-slate-600">Loading…</p>
+        </div>
+      }
+    >
+      <ImageChoicePageContent />
+    </Suspense>
+  )
 }
