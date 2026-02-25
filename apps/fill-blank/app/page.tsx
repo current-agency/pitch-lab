@@ -21,7 +21,7 @@ export default function FillBlankPage() {
     e.preventDefault()
     console.log('Fill-in-the-blank:', values)
     setSubmitted(true)
-    // TODO: POST to Payload or API
+    // Persist answers: POST to Payload or API (e.g. fill-blank responses collection). See docs/feature-user-dashboard.md.
   }
 
   if (submitted) {

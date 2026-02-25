@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { ActivityCard } from '@/components/activity-card'
 import { ApplicationShell5 } from '@/components/application-shell5'
 import { type CardData } from '@/components/feature222'
+import { requireAuth } from '@/lib/auth'
 
 const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
 const IMAGE_CHOICE_URL =
@@ -67,10 +68,7 @@ function toSurveyCard(companyId: string): CardData {
 
 export default async function DashboardPage() {
   const cookieStore = await cookies()
-  const token = cookieStore.get('payload-token')?.value
-  if (!token) {
-    redirect('/login')
-  }
+  const { token } = requireAuth(cookieStore)
 
   const [userRes, contentRankRes] = await Promise.all([
     fetch(`${CMS_URL}/api/users/me?depth=1`, {

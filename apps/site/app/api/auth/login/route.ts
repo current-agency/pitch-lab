@@ -1,35 +1,10 @@
 import { NextResponse } from 'next/server'
+import { AUTH_COOKIE_NAME } from '@/lib/auth'
+import { getCmsUrl, getErrorMessage, isLocalhost } from '@/lib/login-helpers'
 
-const COOKIE_NAME = 'payload-token'
 const COOKIE_MAX_AGE = 60 * 60 * 2 // 2 hours (match Payload tokenExpiration)
 
-function getCmsUrl(): string {
-  const url = process.env.CMS_URL || 'http://localhost:3001'
-  return url.replace(/\/?$/, '')
-}
-
-function isLocalhost(url: string): boolean {
-  try {
-    const u = new URL(url)
-    return u.hostname === 'localhost' || u.hostname === '127.0.0.1'
-  } catch {
-    return url.includes('localhost') || url.includes('127.0.0.1')
-  }
-}
-
-function getErrorMessage(data: unknown): string {
-  if (data && typeof data === 'object') {
-    const d = data as Record<string, unknown>
-    if (typeof d.message === 'string') return d.message
-    if (Array.isArray(d.errors) && d.errors[0] && typeof d.errors[0] === 'object') {
-      const first = (d.errors[0] as { message?: string }).message
-      if (typeof first === 'string') return first
-    }
-    if (typeof d.error === 'string') return d.error
-  }
-  return 'Login failed'
-}
-
+// Production: consider adding rate limiting (e.g. Vercel Rate Limit, Upstash Redis) to limit login attempts per IP.
 export async function POST(request: Request) {
   let body: { email?: string; password?: string }
   try {
@@ -82,7 +57,7 @@ export async function POST(request: Request) {
   }
 
   const response = NextResponse.json({ user: (data as { user?: unknown }).user })
-  response.cookies.set(COOKIE_NAME, token, {
+  response.cookies.set(AUTH_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

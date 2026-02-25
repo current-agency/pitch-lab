@@ -74,7 +74,7 @@ function ImageChoicePageContent() {
     const elapsed = Date.now() - startTime
     setSelected(side)
     setResults((prev) => [...prev, { pairIndex, side, elapsedMs: elapsed }])
-    // TODO: POST to API to store result
+    // Persist result: POST to CMS (e.g. image-choice-completions or assessment results). See docs/feature-user-dashboard.md.
 
     const nextIndex = pairIndex + 1
     if (nextIndex >= assessment.imagePairs.length) {

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { getToken } from '@/lib/auth'
 
 const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
-const COOKIE_NAME = 'payload-token'
 
 export async function GET() {
   const cookieStore = await cookies()
-  const token = cookieStore.get(COOKIE_NAME)?.value
+  const token = getToken(cookieStore)
   if (!token) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

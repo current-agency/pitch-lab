@@ -2,19 +2,27 @@
  * Proxies to CMS platform-survey-config. Returns { title, sections } for a given company.
  * Query: ?company=COMPANY_ID (required). Title is the company name when that company has the survey enabled.
  */
-const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
+import { buildConfigUrl } from '../../../lib/survey-api'
+import { requireEnv } from '../../../lib/env'
 
 export async function GET(request: Request) {
+  let cmsUrl: string
+  try {
+    cmsUrl = requireEnv('CMS_URL')
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'CMS_URL is required'
+    return Response.json({ error: message }, { status: 503 })
+  }
+
   try {
     const { searchParams } = new URL(request.url)
     const company = searchParams.get('company')?.trim()
     if (!company) {
       return Response.json({ error: 'company query param required' }, { status: 400 })
     }
-    const base = CMS_URL.replace(/\/$/, '')
     const headers: Record<string, string> = { Accept: 'application/json' }
     if (process.env.PLATFORM_SURVEY_API_SECRET) headers['x-platform-survey-secret'] = process.env.PLATFORM_SURVEY_API_SECRET
-    const res = await fetch(`${base}/api/platform-survey-config?company=${encodeURIComponent(company)}`, {
+    const res = await fetch(buildConfigUrl(cmsUrl, company), {
       cache: 'no-store',
       headers,
     })

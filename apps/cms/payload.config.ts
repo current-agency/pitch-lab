@@ -24,6 +24,13 @@ const serverURL =
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined) ||
   'http://localhost:3001'
 
+const payloadSecret = process.env.PAYLOAD_SECRET
+if (process.env.NODE_ENV === 'production' && (!payloadSecret || payloadSecret === 'change-me-in-production')) {
+  throw new Error(
+    'PAYLOAD_SECRET must be set to a secure random value in production. Do not use the default. See apps/cms/.env.example.'
+  )
+}
+
 export default buildConfig({
   serverURL,
   endpoints: [
@@ -306,7 +313,7 @@ export default buildConfig({
   },
   collections: [Companies, Users, Media, ImageChoiceAssessments, ContentRank, QuestionsBank, MigrationReviewSession, PlatformSurveyQuestions, PlatformSurveyResponses],
   editor: lexicalEditor(),
-  secret: process.env.PAYLOAD_SECRET || 'change-me-in-production',
+  secret: payloadSecret || 'change-me-in-production',
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },

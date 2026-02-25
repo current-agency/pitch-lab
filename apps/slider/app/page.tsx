@@ -12,7 +12,7 @@ export default function SliderPage() {
     const closenessToA = 100 - value
     const closenessToB = value
     console.log({ value, closenessToA, closenessToB })
-    // TODO: POST to Payload or API
+    // Persist response: POST to Payload or API (e.g. slider responses collection). See docs/feature-user-dashboard.md.
   }
 
   return (
