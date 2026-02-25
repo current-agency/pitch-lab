@@ -9,10 +9,14 @@ const IMAGE_CHOICE_URL =
   process.env.NEXT_PUBLIC_IMAGE_CHOICE_URL || 'http://localhost:3002'
 const CONTENT_RANK_URL =
   process.env.NEXT_PUBLIC_CONTENT_RANK_URL || 'http://localhost:3003'
+const SURVEY_URL =
+  process.env.NEXT_PUBLIC_SURVEY_URL || 'http://localhost:3005'
 const DEFAULT_CARD_BACKGROUND =
   'https://deifkwefumgah.cloudfront.net/shadcnblocks/block/photos/simone-hutsch-5oYbG-sEImY-unsplash.jpg'
 const CONTENT_RANK_BACKGROUND =
   'https://deifkwefumgah.cloudfront.net/shadcnblocks/block/photos/simone-hutsch-o9F8dRoSucM-unsplash.jpg'
+const SURVEY_BACKGROUND =
+  'https://deifkwefumgah.cloudfront.net/shadcnblocks/block/photos/simone-hutsch-5oYbG-sEImY-unsplash.jpg'
 
 type AssignedAssessment = {
   id: string
@@ -52,6 +56,15 @@ function toContentRankCard(instance: ContentRankInstance): CardData {
   }
 }
 
+function toSurveyCard(companyId: string): CardData {
+  return {
+    title: 'Platform Fit Quiz',
+    link: `${SURVEY_URL}?company=${encodeURIComponent(companyId)}`,
+    background: SURVEY_BACKGROUND,
+    stats: [{ number: 'Survey', text: 'Platform Fit Quiz: answer questions to get a platform recommendation' }],
+  }
+}
+
 export default async function DashboardPage() {
   const cookieStore = await cookies()
   const token = cookieStore.get('payload-token')?.value
@@ -80,6 +93,7 @@ export default async function DashboardPage() {
     lastName?: string | null
     email?: string | null
     assignedApplications?: (string | AssignedAssessment)[] | null
+    company?: string | { id: string; name?: string | null; platformSurveyEnabled?: boolean } | null
   }
   const assigned = user?.assignedApplications ?? []
   const userName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || 'User'
@@ -92,7 +106,20 @@ export default async function DashboardPage() {
     .filter((a): a is AssignedAssessment => !!a)
     .map(toImageChoiceCard)
   const contentRankCards = contentRanks.map(toContentRankCard)
-  const cards: CardData[] = [...imageChoiceCards, ...contentRankCards]
+
+  const userCompany = user?.company
+  const companyId = typeof userCompany === 'object' && userCompany?.id ? userCompany.id : typeof userCompany === 'string' ? userCompany : null
+  const surveyEnabled = typeof userCompany === 'object' && userCompany?.platformSurveyEnabled === true
+  const surveyCard =
+    companyId && surveyEnabled
+      ? { ...toSurveyCard(companyId), openInOverlay: true as const }
+      : null
+
+  const cards: (CardData & { openInOverlay?: boolean })[] = [
+    ...imageChoiceCards.map((c) => ({ ...c, openInOverlay: true })),
+    ...contentRankCards,
+    ...(surveyCard ? [surveyCard] : []),
+  ]
 
   return (
     <ApplicationShell5
@@ -113,6 +140,7 @@ export default async function DashboardPage() {
                 description={card.stats[0]?.text}
                 categoryTag={card.stats[0]?.number}
                 href={card.link}
+                openInOverlay={card.openInOverlay}
               />
             ))}
           </div>

@@ -49,9 +49,7 @@ function SurveyPageContent() {
       ])
         .then(([config]) => {
           if (cancelled) return
-          if (config && typeof config.title === 'string' && config.title) {
-            setTitle(config.title)
-          }
+          // Config validates company has survey enabled; title stays "Platform Fit Quiz" (no company name)
           setStartTime(Date.now())
         })
         .catch((err) => {
@@ -105,7 +103,10 @@ function SurveyPageContent() {
       const v = answers[key]
       if (v == null || v === '') return false
       if (Array.isArray(v) && v.length === 0) return false
-      if (typeof v === 'object' && !Array.isArray(v) && 'pain' in v && (v as { pain: number }).pain === 0) return false
+      if (typeof v === 'object' && !Array.isArray(v) && 'pain' in v) {
+        if ((v as { notApplicable?: boolean }).notApplicable) return true
+        if ((v as { pain?: number }).pain === 0) return false
+      }
     }
     return true
   }
@@ -157,15 +158,15 @@ function SurveyPageContent() {
         const d = await res.json().catch(() => ({}))
         throw new Error(d.error || d.details || res.statusText)
       }
-      const recommendation = computeRecommendation(answers)
+      const recommendationList = computeRecommendation(answers)
       setStep('thankyou')
-      setRecommendation(recommendation)
+      setRecommendations(recommendationList)
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : String(err))
     }
   }
 
-  const [recommendation, setRecommendation] = useState<{ platform: string; rationale: string } | null>(null)
+  const [recommendations, setRecommendations] = useState<{ platform: string; rationale: string }[]>([])
 
   if (loading) {
     return (
@@ -197,14 +198,20 @@ function SurveyPageContent() {
   if (step === 'thankyou') {
     return (
       <div className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
-        <div className="rounded-lg border border-slate-200 bg-white p-8 shadow-sm text-center max-w-md">
+        <div className="rounded-lg border border-slate-200 bg-white p-8 shadow-sm text-center max-w-lg w-full">
           <h2 className="text-xl font-semibold text-slate-900">Thank you</h2>
           <p className="mt-2 text-slate-600">Your responses have been recorded.</p>
-          {recommendation && (
+          {recommendations.length > 0 && (
             <div className="mt-6 rounded border border-slate-200 bg-slate-50 p-4 text-left">
-              <p className="text-sm font-medium text-slate-700">Platform recommendation</p>
-              <p className="mt-1 font-medium text-slate-900">{recommendation.platform}</p>
-              <p className="mt-1 text-sm text-slate-600">{recommendation.rationale}</p>
+              <p className="text-sm font-medium text-slate-700">Top 3 platform recommendations</p>
+              <ol className="mt-3 space-y-3 list-decimal list-inside">
+                {recommendations.map((rec, i) => (
+                  <li key={i} className="pl-1">
+                    <span className="font-medium text-slate-900">{rec.platform}</span>
+                    <p className="mt-0.5 text-sm text-slate-600">{rec.rationale}</p>
+                  </li>
+                ))}
+              </ol>
             </div>
           )}
         </div>
@@ -317,7 +324,8 @@ function formatAnswer(v: SurveyAnswerValue | undefined): string {
   }
   if (typeof v === 'object' && v !== null) {
     if ('pain' in v) {
-      const m = v as { pain?: number; frequency?: string; owner?: string; whatMakesHard?: string }
+      const m = v as { pain?: number; frequency?: string; owner?: string; whatMakesHard?: string; notApplicable?: boolean }
+      if (m.notApplicable) return "I don't do this / I've never done this"
       return [m.pain && `Pain ${m.pain}`, m.frequency, m.owner, m.whatMakesHard].filter(Boolean).join(' · ') || '—'
     }
     return Object.entries(v).map(([k, val]) => `${k}: ${val}`).join('; ') || '—'
@@ -325,47 +333,131 @@ function formatAnswer(v: SurveyAnswerValue | undefined): string {
   return '—'
 }
 
-/** Simple scoring map: answer patterns -> platform. Returns top recommendation and short rationale. */
-function computeRecommendation(answers: SurveyAnswers): { platform: string; rationale: string } | null {
+/** Scoring uses actual survey question keys and option values. Returns top 3 platform recommendations. */
+function computeRecommendation(answers: SurveyAnswers): { platform: string; rationale: string }[] {
   const categories = ['headless-cms', 'wordpress', 'webflow', 'hubspot-cms', 'contentful'] as const
   const scores: Record<string, number> = { 'headless-cms': 0, wordpress: 0, webflow: 0, 'hubspot-cms': 0, contentful: 0 }
 
-  // Example rules (can be moved to CMS later)
-  const technicalComfort = answers['technical-comfort']
-  if (typeof technicalComfort === 'number' && technicalComfort >= 4) {
-    scores['headless-cms'] = (scores['headless-cms'] ?? 0) + 2
-    scores['contentful'] = (scores['contentful'] ?? 0) + 1
+  // Editor autonomy: technical-comfort-level
+  const technicalComfort = answers['technical-comfort-level']
+  if (technicalComfort === 'very-technical') {
+    scores['headless-cms'] += 2
+    scores['contentful'] += 1
   }
-  const teamSize = answers['team-size']
-  if (teamSize === 'solo' || teamSize === '2-5') {
-    scores['wordpress'] = (scores['wordpress'] ?? 0) + 1
-    scores['webflow'] = (scores['webflow'] ?? 0) + 2
-  }
-  if (teamSize === '16-plus') {
-    scores['headless-cms'] = (scores['headless-cms'] ?? 0) + 1
-    scores['contentful'] = (scores['contentful'] ?? 0) + 2
-  }
-  const personalization = answers['personalization-level']
-  if (typeof personalization === 'number' && personalization >= 4) {
-    scores['hubspot-cms'] = (scores['hubspot-cms'] ?? 0) + 2
-  }
-  const needsVisual = answers['needs-visual-editing']
-  if (needsVisual === 'yes-essential') {
-    scores['webflow'] = (scores['webflow'] ?? 0) + 2
-    scores['hubspot-cms'] = (scores['hubspot-cms'] ?? 0) + 1
-  }
-  if (needsVisual === 'no') {
-    scores['headless-cms'] = (scores['headless-cms'] ?? 0) + 1
-    scores['contentful'] = (scores['contentful'] ?? 0) + 1
+  if (technicalComfort === 'marketing-content' || technicalComfort === 'moderately-technical') {
+    scores['webflow'] += 1
+    scores['hubspot-cms'] += 1
+    scores['wordpress'] += 1
   }
 
-  const sorted = (categories as unknown as string[])
-    .map((c) => ({ platform: c, score: scores[c] ?? 0 }))
-    .sort((a, b) => b.score - a.score)
-  const top = sorted[0]
-  if (!top || top.score === 0) {
-    return { platform: 'Headless CMS', rationale: 'Based on your answers, a flexible headless CMS could be a good fit.' }
+  // Content complexity: content-relationships
+  const contentRelations = answers['content-relationships']
+  if (contentRelations === 'highly-connected' || contentRelations === 'complex-relationships') {
+    scores['headless-cms'] += 2
+    scores['contentful'] += 2
   }
+  if (contentRelations === 'standalone' || contentRelations === 'some-connections') {
+    scores['wordpress'] += 1
+    scores['webflow'] += 1
+  }
+
+  // Multilingual / multisite: multilingual-multisite (array)
+  const multi = answers['multilingual-multisite']
+  const multiArr = Array.isArray(multi) ? multi : []
+  if (multiArr.some((v) => v === 'multiple-languages' || v === 'multiple-brands-sites')) {
+    scores['contentful'] += 2
+    scores['headless-cms'] += 1
+  }
+
+  // Design freedom: design-freedom-vs-guardrails
+  const designFreedom = answers['design-freedom-vs-guardrails']
+  if (designFreedom === 'complete-freedom') {
+    scores['webflow'] += 2
+  }
+  if (designFreedom === 'strict-templates') {
+    scores['hubspot-cms'] += 1
+    scores['wordpress'] += 1
+  }
+
+  // Marketing / personalization (rating 1–5)
+  const marketingDynamic = answers['marketing-dynamic-content']
+  const marketingPersonalized = answers['marketing-personalized-experiences']
+  if (typeof marketingDynamic === 'number' && marketingDynamic >= 4) scores['hubspot-cms'] += 1
+  if (typeof marketingPersonalized === 'number' && marketingPersonalized >= 4) {
+    scores['hubspot-cms'] += 2
+  }
+
+  // Lead gen priority
+  const leadGen = answers['lead-generation-priority']
+  if (leadGen === 'lead-gen') {
+    scores['hubspot-cms'] += 2
+  }
+  if (leadGen === 'brand-info') {
+    scores['wordpress'] += 1
+    scores['webflow'] += 1
+  }
+
+  // Integrations: integration-priority
+  const integrationPriority = answers['integration-priority']
+  if (integrationPriority === 'native-maintained') {
+    scores['hubspot-cms'] += 1
+    scores['wordpress'] += 1
+  }
+  if (integrationPriority === 'api-access' || integrationPriority === 'build-middleware') {
+    scores['headless-cms'] += 1
+    scores['contentful'] += 1
+  }
+
+  // Team resources: development-resources
+  const devResources = answers['development-resources']
+  if (devResources === 'no-developer') {
+    scores['webflow'] += 2
+    scores['hubspot-cms'] += 1
+    scores['wordpress'] += 2
+  }
+  if (devResources === 'fulltime-internal') {
+    scores['headless-cms'] += 1
+    scores['contentful'] += 1
+  }
+
+  // Scale: content-volume, traffic-performance
+  const contentVolume = answers['content-volume']
+  if (contentVolume === '10000-plus' || contentVolume === '2000-10000') {
+    scores['contentful'] += 2
+    scores['headless-cms'] += 1
+  }
+  if (contentVolume === 'under-100' || contentVolume === '100-500') {
+    scores['wordpress'] += 1
+    scores['webflow'] += 1
+  }
+
+  // Budget: platform-budget-annual
+  const budget = answers['platform-budget-annual']
+  if (budget === 'under-2k' || budget === '2k-10k') {
+    scores['wordpress'] += 2
+    scores['webflow'] += 1
+  }
+  if (budget === '50k-plus') {
+    scores['hubspot-cms'] += 1
+    scores['contentful'] += 1
+  }
+
+  // Ideal workflow ranking: high importance for "see-as-you-build" or "drag-drop" → Webflow/HubSpot
+  const ranking = answers['ideal-workflow-ranking']
+  const rankArr = Array.isArray(ranking) ? (ranking as string[]) : []
+  const first = rankArr[0]
+  if (first === 'see-as-you-build' || first === 'drag-drop-sections') {
+    scores['webflow'] += 2
+    scores['hubspot-cms'] += 1
+  }
+  if (first === 'custom-code') {
+    scores['headless-cms'] += 2
+  }
+  if (rankArr.indexOf('template-library') <= 1) {
+    scores['hubspot-cms'] += 1
+    scores['wordpress'] += 1
+  }
+
   const labels: Record<string, string> = {
     'headless-cms': 'Headless CMS',
     wordpress: 'WordPress',
@@ -374,16 +466,31 @@ function computeRecommendation(answers: SurveyAnswers): { platform: string; rati
     contentful: 'Contentful',
   }
   const rationales: Record<string, string> = {
-    'headless-cms': 'Your technical comfort and scale needs point toward a headless setup.',
-    wordpress: 'Your team size and content needs align well with WordPress.',
-    webflow: 'Visual editing and simplicity are a strong match for Webflow.',
-    'hubspot-cms': 'Marketing and personalization priorities suggest HubSpot CMS.',
-    contentful: 'Your scale and structure needs align with Contentful.',
+    'headless-cms': 'Your technical comfort and content structure point toward a flexible headless setup.',
+    wordpress: 'Your team and content needs align well with WordPress’s ecosystem and cost profile.',
+    webflow: 'Visual editing and design freedom are a strong match for Webflow.',
+    'hubspot-cms': 'Marketing and lead-generation priorities suggest HubSpot CMS.',
+    contentful: 'Scale, structure, and integration needs align with Contentful.',
   }
-  return {
-    platform: labels[top.platform] ?? top.platform,
-    rationale: rationales[top.platform] ?? 'Based on your answers, this platform is a good fit.',
+
+  const sorted = (categories as unknown as string[])
+    .map((c) => ({ platform: c, score: scores[c] ?? 0 }))
+    .sort((a, b) => b.score - a.score)
+
+  const topThree = sorted.slice(0, 3).map(({ platform }) => ({
+    platform: labels[platform] ?? platform,
+    rationale: rationales[platform] ?? 'Based on your answers, this platform could be a good fit.',
+  }))
+
+  if (topThree.length === 0 || sorted[0]?.score === 0) {
+    return [
+      { platform: 'Headless CMS', rationale: 'Based on your answers, a flexible headless CMS could be a good fit. Answer more questions for a more specific recommendation.' },
+      { platform: 'WordPress', rationale: 'Your team and content needs may align with WordPress’s ecosystem and cost profile.' },
+      { platform: 'Webflow', rationale: 'Visual editing and design freedom are a strong match for Webflow.' },
+    ]
   }
+
+  return topThree
 }
 
 export default function SurveyPage() {

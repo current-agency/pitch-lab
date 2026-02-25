@@ -5,10 +5,17 @@
  */
 const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
 
+function surveyApiHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  const secret = process.env.PLATFORM_SURVEY_API_SECRET
+  if (secret) headers['x-platform-survey-secret'] = secret
+  return headers
+}
+
 async function fetchFromCms(base: string): Promise<Response> {
   return fetch(`${base}/api/platform-survey-questions/grouped`, {
     cache: 'no-store',
-    headers: { Accept: 'application/json' },
+    headers: surveyApiHeaders(),
   })
 }
 
@@ -20,7 +27,7 @@ export async function GET() {
     if (res.status === 404) {
       const alt = await fetch(`${base}/api/platform-survey-questions`, {
         cache: 'no-store',
-        headers: { Accept: 'application/json' },
+        headers: surveyApiHeaders(),
       })
       if (alt.ok) res = alt
     }

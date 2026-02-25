@@ -29,6 +29,20 @@ export const Companies: CollectionConfig = {
         description: 'When enabled, this company is assigned the Platform Fit Quiz. Users can take the survey via a link with ?company=<this company id>. The company name is shown as the survey title.',
       },
     },
+    {
+      name: 'users',
+      type: 'relationship',
+      relationTo: 'users',
+      hasMany: true,
+      admin: {
+        description: 'Users in this company. Updated automatically when a user’s company is set.',
+        readOnly: true,
+      },
+      access: {
+        update: () => false,
+        create: () => false,
+      },
+    },
   ],
   timestamps: true,
 }

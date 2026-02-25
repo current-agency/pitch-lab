@@ -12,9 +12,11 @@ export async function GET(request: Request) {
       return Response.json({ error: 'company query param required' }, { status: 400 })
     }
     const base = CMS_URL.replace(/\/$/, '')
+    const headers: Record<string, string> = { Accept: 'application/json' }
+    if (process.env.PLATFORM_SURVEY_API_SECRET) headers['x-platform-survey-secret'] = process.env.PLATFORM_SURVEY_API_SECRET
     const res = await fetch(`${base}/api/platform-survey-config?company=${encodeURIComponent(company)}`, {
       cache: 'no-store',
-      headers: { Accept: 'application/json' },
+      headers,
     })
     if (!res.ok) {
       const text = await res.text()

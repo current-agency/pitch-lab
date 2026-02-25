@@ -7,9 +7,11 @@ const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
 export async function GET() {
   try {
     const base = CMS_URL.replace(/\/$/, '')
+    const headers: Record<string, string> = { Accept: 'application/json' }
+    if (process.env.PLATFORM_SURVEY_API_SECRET) headers['x-platform-survey-secret'] = process.env.PLATFORM_SURVEY_API_SECRET
     const res = await fetch(`${base}/api/platform-survey-questions/grouped`, {
       cache: 'no-store',
-      headers: { Accept: 'application/json' },
+      headers,
     })
     if (!res.ok) {
       const text = await res.text()

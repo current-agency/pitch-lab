@@ -18,12 +18,22 @@ export function QuestionRenderer({ question, value, onChange }: Props) {
   const required = question.required !== false
 
   if (question.inputType === 'multi-select') {
+    const options = question.options ?? []
     const raw = (Array.isArray(value) ? value : value ? [String(value)] : []) as string[]
-    const optionValues = (question.options ?? []).map((o) => o.value)
-    const selected = raw.filter((v) => optionValues.includes(v))
+    const optionValues = options.map((o) => o.value)
+    let selected = raw.filter((v) => optionValues.includes(v))
+
+    // "None of the above" is mutually exclusive: when selected, no other options can be chosen
+    const noneOption = options.find((o) => /none\s+of\s+the\s+above/i.test(o.label))
+    const isNoneSelected = noneOption != null && selected.includes(noneOption.value)
+    if (isNoneSelected) {
+      selected = [noneOption.value]
+    }
+
     const otherText = raw.includes('other') ? (raw[raw.indexOf('other') + 1] ?? '') : ''
     const toggle = (v: string) => {
       if (v === 'other') {
+        if (isNoneSelected) return // other is disabled when "none" is selected
         if (selected.includes('other')) {
           const i = raw.indexOf('other')
           const next = raw.slice(0, i).concat(raw.slice(i + 2))
@@ -33,6 +43,15 @@ export function QuestionRenderer({ question, value, onChange }: Props) {
         }
         return
       }
+      if (noneOption && v === noneOption.value) {
+        if (selected.includes(v)) {
+          onChange(key, [])
+        } else {
+          onChange(key, [v])
+        }
+        return
+      }
+      if (isNoneSelected) return // other options disabled when "none" is selected
       const next = selected.includes(v) ? raw.filter((x) => x !== v) : [...raw, v]
       onChange(key, next)
     }
@@ -42,28 +61,37 @@ export function QuestionRenderer({ question, value, onChange }: Props) {
       const next = [...raw.slice(0, i + 1), text, ...raw.slice(i + 2)]
       onChange(key, next)
     }
+
     return (
       <div className="space-y-2">
-        {question.options?.map((opt) => (
-          <label key={opt.value} className="flex items-start gap-2">
-            <input
-              type="checkbox"
-              checked={selected.includes(opt.value)}
-              onChange={() => toggle(opt.value)}
-              className="mt-1 h-4 w-4 rounded border-slate-300"
-            />
-            <span className="text-slate-800">{opt.label}</span>
-            {opt.hasTextInput && selected.includes(opt.value) && (
+        {options.map((opt) => {
+          const isNoneOpt = noneOption?.value === opt.value
+          const disabled = isNoneSelected && !isNoneOpt
+          return (
+            <label
+              key={opt.value}
+              className={`flex items-start gap-2 ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
+            >
               <input
-                type="text"
-                placeholder="Describe..."
-                className="ml-2 flex-1 rounded border border-slate-300 px-2 py-1 text-sm"
-                value={otherText}
-                onChange={(e) => setOtherText(e.target.value)}
+                type="checkbox"
+                checked={selected.includes(opt.value)}
+                onChange={() => toggle(opt.value)}
+                disabled={disabled}
+                className="mt-1 h-4 w-4 rounded border-slate-300 disabled:cursor-not-allowed"
               />
-            )}
-          </label>
-        ))}
+              <span className="text-slate-800">{opt.label}</span>
+              {opt.hasTextInput && selected.includes(opt.value) && !disabled && (
+                <input
+                  type="text"
+                  placeholder="Describe..."
+                  className="ml-2 flex-1 rounded border border-slate-300 px-2 py-1 text-sm"
+                  value={otherText}
+                  onChange={(e) => setOtherText(e.target.value)}
+                />
+              )}
+            </label>
+          )
+        })}
       </div>
     )
   }
@@ -183,75 +211,95 @@ export function QuestionRenderer({ question, value, onChange }: Props) {
 
   if (question.inputType === 'pain-level-with-meta') {
     const meta = value && typeof value === 'object' && !Array.isArray(value)
-      ? (value as { pain?: number; frequency?: string; owner?: string; whatMakesHard?: string })
+      ? (value as { pain?: number; frequency?: string; owner?: string; whatMakesHard?: string; notApplicable?: boolean })
       : {}
+    const notApplicable = meta.notApplicable === true
     const pain = meta.pain ?? 0
     const frequency = meta.frequency ?? ''
     const owner = meta.owner ?? ''
     const whatMakesHard = meta.whatMakesHard ?? ''
+
     return (
       <div className="space-y-4 rounded border border-slate-200 bg-slate-50 p-4">
-        <div>
-          <p className="mb-1 text-sm font-medium text-slate-700">Pain level (1–5)</p>
-          <div className="flex gap-1">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => onChange(key, { ...meta, pain: n })}
-                className={`h-9 w-9 rounded border text-sm ${
-                  pain === n ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white hover:bg-slate-100'
-                }`}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <p className="mb-1 text-sm font-medium text-slate-700">Frequency</p>
-          <div className="flex flex-wrap gap-2">
-            {['Daily', 'Weekly', 'Monthly', 'Rarely'].map((f) => (
-              <label key={f} className="flex items-center gap-1">
-                <input
-                  type="radio"
-                  name={`${key}-freq`}
-                  checked={frequency === f}
-                  onChange={() => onChange(key, { ...meta, frequency: f })}
-                  className="h-4 w-4"
-                />
-                <span className="text-slate-800">{f}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-        <div>
-          <p className="mb-1 text-sm font-medium text-slate-700">Who usually owns this?</p>
-          <div className="flex flex-wrap gap-2">
-            {['Me', 'Developer', 'Agency', 'Other'].map((o) => (
-              <label key={o} className="flex items-center gap-1">
-                <input
-                  type="radio"
-                  name={`${key}-owner`}
-                  checked={owner === o}
-                  onChange={() => onChange(key, { ...meta, owner: o })}
-                  className="h-4 w-4"
-                />
-                <span className="text-slate-800">{o}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">What makes this hard?</label>
-          <textarea
-            value={whatMakesHard}
-            onChange={(e) => onChange(key, { ...meta, whatMakesHard: e.target.value })}
-            rows={2}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-slate-900"
-            placeholder="Optional..."
+        <label className="flex cursor-pointer items-start gap-2">
+          <input
+            type="checkbox"
+            checked={notApplicable}
+            onChange={(e) =>
+              onChange(key, e.target.checked ? { notApplicable: true } : {})
+            }
+            className="mt-1 h-4 w-4 rounded border-slate-300"
           />
-        </div>
+          <span className="text-sm font-medium text-slate-700">
+            I don&apos;t do this or I&apos;ve never done this
+          </span>
+        </label>
+
+        {!notApplicable && (
+          <>
+            <div>
+              <p className="mb-1 text-sm font-medium text-slate-700">Pain level (1–5)</p>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => onChange(key, { ...meta, pain: n, notApplicable: false })}
+                    className={`h-9 w-9 rounded border text-sm ${
+                      pain === n ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white hover:bg-slate-100'
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-1 text-sm font-medium text-slate-700">Frequency</p>
+              <div className="flex flex-wrap gap-2">
+                {['Daily', 'Weekly', 'Monthly', 'Rarely'].map((f) => (
+                  <label key={f} className="flex items-center gap-1">
+                    <input
+                      type="radio"
+                      name={`${key}-freq`}
+                      checked={frequency === f}
+                      onChange={() => onChange(key, { ...meta, frequency: f })}
+                      className="h-4 w-4"
+                    />
+                    <span className="text-slate-800">{f}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-1 text-sm font-medium text-slate-700">Who usually owns this?</p>
+              <div className="flex flex-wrap gap-2">
+                {['Me', 'Developer', 'Agency', 'Other'].map((o) => (
+                  <label key={o} className="flex items-center gap-1">
+                    <input
+                      type="radio"
+                      name={`${key}-owner`}
+                      checked={owner === o}
+                      onChange={() => onChange(key, { ...meta, owner: o })}
+                      className="h-4 w-4"
+                    />
+                    <span className="text-slate-800">{o}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700">What makes this hard?</label>
+              <textarea
+                value={whatMakesHard}
+                onChange={(e) => onChange(key, { ...meta, whatMakesHard: e.target.value })}
+                rows={2}
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-slate-900"
+                placeholder="Optional..."
+              />
+            </div>
+          </>
+        )}
       </div>
     )
   }

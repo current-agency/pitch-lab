@@ -56,6 +56,10 @@ export default buildConfig({
       method: 'get',
       handler: async (req) => {
         try {
+          const surveySecret = process.env.PLATFORM_SURVEY_API_SECRET
+          if (surveySecret && req.headers?.get?.('x-platform-survey-secret') !== surveySecret) {
+            return Response.json({ error: 'Unauthorized' }, { status: 401 })
+          }
           const result = await req.payload.find({
             collection: 'platform-survey-questions',
             where: { isActive: { equals: true } },
@@ -89,6 +93,10 @@ export default buildConfig({
       method: 'get',
       handler: async (req) => {
         try {
+          const surveySecret = process.env.PLATFORM_SURVEY_API_SECRET
+          if (surveySecret && req.headers?.get?.('x-platform-survey-secret') !== surveySecret) {
+            return Response.json({ error: 'Unauthorized' }, { status: 401 })
+          }
           const url = new URL(req.url || '', 'http://localhost')
           const companyId = url.searchParams.get('company')?.trim()
           if (!companyId) {

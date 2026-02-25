@@ -142,6 +142,10 @@ export interface Company {
    * When enabled, this company is assigned the Platform Fit Quiz. Users can take the survey via a link with ?company=<this company id>. The company name is shown as the survey title.
    */
   platformSurveyEnabled?: boolean | null;
+  /**
+   * Users in this company. Updated automatically when a user’s company is set.
+   */
+  users?: (string | User)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -641,6 +645,7 @@ export interface PayloadMigration {
 export interface CompaniesSelect<T extends boolean = true> {
   name?: T;
   platformSurveyEnabled?: T;
+  users?: T;
   updatedAt?: T;
   createdAt?: T;
 }

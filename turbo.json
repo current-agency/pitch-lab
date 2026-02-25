@@ -4,7 +4,8 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": ["PLATFORM_SURVEY_API_SECRET"]
     },
     "dev": {
       "cache": false,
@@ -17,5 +18,5 @@
       "cache": false
     }
   },
-  "globalEnv": ["NODE_ENV", "PAYLOAD_SECRET", "DATABASE_URI", "NEXT_PUBLIC_PAYLOAD_API","PAYLOAD_PUBLIC_SERVER_URL","VERCEL_URL","CMS_URL","CSV_UPLOAD_DIR","MIGRATION_SESSION_API_SECRET"]
+  "globalEnv": ["NODE_ENV", "PAYLOAD_SECRET", "DATABASE_URI", "NEXT_PUBLIC_PAYLOAD_API","PAYLOAD_PUBLIC_SERVER_URL","VERCEL_URL","CMS_URL","CSV_UPLOAD_DIR","MIGRATION_SESSION_API_SECRET","PLATFORM_SURVEY_API_SECRET"]
 }

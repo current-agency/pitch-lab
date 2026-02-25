@@ -150,6 +150,70 @@ export const Users: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [
+      async ({ doc, previousDoc, operation, req }) => {
+        const userId = typeof doc?.id === 'string' ? doc.id : (doc as { id?: string })?.id
+        if (!userId || !req?.payload) return
+
+        const newCompanyId =
+          typeof doc.company === 'object' && doc.company !== null && 'id' in doc.company
+            ? (doc.company as { id: string }).id
+            : typeof doc.company === 'string'
+              ? doc.company
+              : null
+        const prevCompanyId =
+          previousDoc &&
+          (typeof (previousDoc as { company?: string | { id: string } }).company === 'object' &&
+          (previousDoc as { company?: { id: string } }).company !== null
+            ? ((previousDoc as { company: { id: string } }).company?.id ?? null)
+            : typeof (previousDoc as { company?: string } | null)?.company === 'string'
+              ? (previousDoc as { company: string }).company
+              : null)
+
+        const removeFromCompany = async (companyId: string) => {
+          const company = await req.payload.findByID({
+            collection: 'companies',
+            id: companyId,
+            depth: 0,
+            overrideAccess: true,
+          }) as { users?: string[] } | null
+          if (!company?.users || !Array.isArray(company.users)) return
+          const next = (company.users as string[]).filter((id) => id !== userId)
+          if (next.length !== company.users.length) {
+            await req.payload.update({
+              collection: 'companies',
+              id: companyId,
+              data: { users: next },
+              overrideAccess: true,
+            })
+          }
+        }
+
+        const addToCompany = async (companyId: string) => {
+          const company = await req.payload.findByID({
+            collection: 'companies',
+            id: companyId,
+            depth: 0,
+            overrideAccess: true,
+          }) as { users?: string[] } | null
+          const current = Array.isArray(company?.users) ? (company.users as string[]) : []
+          if (current.includes(userId)) return
+          await req.payload.update({
+            collection: 'companies',
+            id: companyId,
+            data: { users: [...current, userId] },
+            overrideAccess: true,
+          })
+        }
+
+        if (prevCompanyId && prevCompanyId !== newCompanyId) {
+          await removeFromCompany(prevCompanyId)
+        }
+        if (newCompanyId) {
+          await addToCompany(newCompanyId)
+        }
+      },
+    ],
     afterLogin: [
       async ({ req, user }) => {
         await req.payload.update({

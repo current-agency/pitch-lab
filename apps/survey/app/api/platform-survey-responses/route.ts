@@ -13,9 +13,11 @@ export async function POST(request: Request) {
       company?: string
     }
     const base = CMS_URL.replace(/\/$/, '')
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', Accept: 'application/json' }
+    if (process.env.PLATFORM_SURVEY_API_SECRET) headers['x-platform-survey-secret'] = process.env.PLATFORM_SURVEY_API_SECRET
     const res = await fetch(`${base}/api/platform-survey-responses`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers,
       body: JSON.stringify({
         respondent: body.respondent ?? {},
         answers: body.answers,
