@@ -335,39 +335,39 @@ function formatAnswer(v: SurveyAnswerValue | undefined): string {
 
 /** Scoring uses actual survey question keys and option values. Returns top 3 platform recommendations. */
 function computeRecommendation(answers: SurveyAnswers): { platform: string; rationale: string }[] {
-  const categories = ['headless-cms', 'wordpress', 'webflow', 'hubspot-cms', 'contentful'] as const
+  const categories = ['drupal', 'wordpress', 'webflow', 'sanity', 'payload'] as const
   type ScoreKey = (typeof categories)[number]
-  const scores: Record<ScoreKey, number> = { 'headless-cms': 0, wordpress: 0, webflow: 0, 'hubspot-cms': 0, contentful: 0 }
+  const scores: Record<ScoreKey, number> = { drupal: 0, wordpress: 0, webflow: 0, sanity: 0, payload: 0 }
 
   // Editor autonomy: technical-comfort-level
   const technicalComfort = answers['technical-comfort-level']
   if (technicalComfort === 'very-technical') {
-    scores['headless-cms'] += 2
-    scores['contentful'] += 1
+    scores['sanity'] += 2
+    scores['payload'] += 2
   }
   if (technicalComfort === 'marketing-content' || technicalComfort === 'moderately-technical') {
     scores['webflow'] += 1
-    scores['hubspot-cms'] += 1
     scores['wordpress'] += 1
   }
 
   // Content complexity: content-relationships
   const contentRelations = answers['content-relationships']
   if (contentRelations === 'highly-connected' || contentRelations === 'complex-relationships') {
-    scores['headless-cms'] += 2
-    scores['contentful'] += 2
+    scores['drupal'] += 2
+    scores['sanity'] += 2
+    scores['payload'] += 1
   }
   if (contentRelations === 'standalone' || contentRelations === 'some-connections') {
     scores['wordpress'] += 1
     scores['webflow'] += 1
   }
 
-  // Multilingual / multisite: multilingual-multisite (array)
+  // Multilingual / multisite
   const multi = answers['multilingual-multisite']
   const multiArr = Array.isArray(multi) ? multi : []
   if (multiArr.some((v) => v === 'multiple-languages' || v === 'multiple-brands-sites')) {
-    scores['contentful'] += 2
-    scores['headless-cms'] += 1
+    scores['drupal'] += 2
+    scores['sanity'] += 1
   }
 
   // Design freedom: design-freedom-vs-guardrails
@@ -376,22 +376,23 @@ function computeRecommendation(answers: SurveyAnswers): { platform: string; rati
     scores['webflow'] += 2
   }
   if (designFreedom === 'strict-templates') {
-    scores['hubspot-cms'] += 1
     scores['wordpress'] += 1
+    scores['drupal'] += 1
   }
 
   // Marketing / personalization (rating 1–5)
   const marketingDynamic = answers['marketing-dynamic-content']
   const marketingPersonalized = answers['marketing-personalized-experiences']
-  if (typeof marketingDynamic === 'number' && marketingDynamic >= 4) scores['hubspot-cms'] += 1
+  if (typeof marketingDynamic === 'number' && marketingDynamic >= 4) scores['webflow'] += 1
   if (typeof marketingPersonalized === 'number' && marketingPersonalized >= 4) {
-    scores['hubspot-cms'] += 2
+    scores['webflow'] += 2
   }
 
   // Lead gen priority
   const leadGen = answers['lead-generation-priority']
   if (leadGen === 'lead-gen') {
-    scores['hubspot-cms'] += 2
+    scores['webflow'] += 1
+    scores['sanity'] += 1
   }
   if (leadGen === 'brand-info') {
     scores['wordpress'] += 1
@@ -401,31 +402,31 @@ function computeRecommendation(answers: SurveyAnswers): { platform: string; rati
   // Integrations: integration-priority
   const integrationPriority = answers['integration-priority']
   if (integrationPriority === 'native-maintained') {
-    scores['hubspot-cms'] += 1
     scores['wordpress'] += 1
+    scores['drupal'] += 1
   }
   if (integrationPriority === 'api-access' || integrationPriority === 'build-middleware') {
-    scores['headless-cms'] += 1
-    scores['contentful'] += 1
+    scores['sanity'] += 1
+    scores['payload'] += 1
   }
 
   // Team resources: development-resources
   const devResources = answers['development-resources']
   if (devResources === 'no-developer') {
     scores['webflow'] += 2
-    scores['hubspot-cms'] += 1
     scores['wordpress'] += 2
   }
   if (devResources === 'fulltime-internal') {
-    scores['headless-cms'] += 1
-    scores['contentful'] += 1
+    scores['sanity'] += 1
+    scores['payload'] += 1
+    scores['drupal'] += 1
   }
 
-  // Scale: content-volume, traffic-performance
+  // Scale: content-volume
   const contentVolume = answers['content-volume']
   if (contentVolume === '10000-plus' || contentVolume === '2000-10000') {
-    scores['contentful'] += 2
-    scores['headless-cms'] += 1
+    scores['drupal'] += 2
+    scores['sanity'] += 1
   }
   if (contentVolume === 'under-100' || contentVolume === '100-500') {
     scores['wordpress'] += 1
@@ -439,39 +440,39 @@ function computeRecommendation(answers: SurveyAnswers): { platform: string; rati
     scores['webflow'] += 1
   }
   if (budget === '50k-plus') {
-    scores['hubspot-cms'] += 1
-    scores['contentful'] += 1
+    scores['drupal'] += 1
+    scores['sanity'] += 1
   }
 
-  // Ideal workflow ranking: high importance for "see-as-you-build" or "drag-drop" → Webflow/HubSpot
+  // Ideal workflow ranking
   const ranking = answers['ideal-workflow-ranking']
   const rankArr = Array.isArray(ranking) ? (ranking as string[]) : []
   const first = rankArr[0]
   if (first === 'see-as-you-build' || first === 'drag-drop-sections') {
     scores['webflow'] += 2
-    scores['hubspot-cms'] += 1
   }
   if (first === 'custom-code') {
-    scores['headless-cms'] += 2
+    scores['sanity'] += 2
+    scores['payload'] += 2
   }
   if (rankArr.indexOf('template-library') <= 1) {
-    scores['hubspot-cms'] += 1
     scores['wordpress'] += 1
+    scores['drupal'] += 1
   }
 
   const labels: Record<string, string> = {
-    'headless-cms': 'Headless CMS',
+    drupal: 'Drupal',
     wordpress: 'WordPress',
     webflow: 'Webflow',
-    'hubspot-cms': 'HubSpot CMS',
-    contentful: 'Contentful',
+    sanity: 'Sanity',
+    payload: 'Payload',
   }
   const rationales: Record<string, string> = {
-    'headless-cms': 'Your technical comfort and content structure point toward a flexible headless setup.',
+    drupal: 'Your scale, structure, and enterprise needs align well with Drupal.',
     wordpress: 'Your team and content needs align well with WordPress’s ecosystem and cost profile.',
     webflow: 'Visual editing and design freedom are a strong match for Webflow.',
-    'hubspot-cms': 'Marketing and lead-generation priorities suggest HubSpot CMS.',
-    contentful: 'Scale, structure, and integration needs align with Contentful.',
+    sanity: 'Your content structure and API-first workflow point toward Sanity.',
+    payload: 'Your technical setup and flexibility needs point toward Payload.',
   }
 
   const sorted = [...categories]
@@ -485,7 +486,7 @@ function computeRecommendation(answers: SurveyAnswers): { platform: string; rati
 
   if (topThree.length === 0 || sorted[0]?.score === 0) {
     return [
-      { platform: 'Headless CMS', rationale: 'Based on your answers, a flexible headless CMS could be a good fit. Answer more questions for a more specific recommendation.' },
+      { platform: 'Payload', rationale: 'Based on your answers, a flexible CMS like Payload could be a good fit. Answer more questions for a more specific recommendation.' },
       { platform: 'WordPress', rationale: 'Your team and content needs may align with WordPress’s ecosystem and cost profile.' },
       { platform: 'Webflow', rationale: 'Visual editing and design freedom are a strong match for Webflow.' },
     ]

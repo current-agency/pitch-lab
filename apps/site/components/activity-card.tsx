@@ -8,6 +8,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
 } from '@/components/ui/sheet'
 
 export interface ActivityCardProps {
@@ -98,6 +99,7 @@ export function ActivityCard({
           >
             <SheetHeader className="sr-only">
               <SheetTitle>{title}</SheetTitle>
+              <SheetDescription>Opens {title} in this panel.</SheetDescription>
             </SheetHeader>
             <div className="min-h-0 flex-1 overflow-hidden">
               <iframe

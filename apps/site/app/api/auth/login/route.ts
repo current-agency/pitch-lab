@@ -1,8 +1,21 @@
 import { NextResponse } from 'next/server'
 
-const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
 const COOKIE_NAME = 'payload-token'
 const COOKIE_MAX_AGE = 60 * 60 * 2 // 2 hours (match Payload tokenExpiration)
+
+function getCmsUrl(): string {
+  const url = process.env.CMS_URL || 'http://localhost:3001'
+  return url.replace(/\/?$/, '')
+}
+
+function isLocalhost(url: string): boolean {
+  try {
+    const u = new URL(url)
+    return u.hostname === 'localhost' || u.hostname === '127.0.0.1'
+  } catch {
+    return url.includes('localhost') || url.includes('127.0.0.1')
+  }
+}
 
 function getErrorMessage(data: unknown): string {
   if (data && typeof data === 'object') {
@@ -30,7 +43,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
   }
 
-  const cmsUrl = CMS_URL.replace(/\/?$/, '')
+  const cmsUrl = getCmsUrl()
+  const inProduction = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production'
+  const cmsIsLocalhost = isLocalhost(cmsUrl)
+
   let res: Response
   try {
     res = await fetch(`${cmsUrl}/api/users/login`, {
@@ -40,10 +56,15 @@ export async function POST(request: Request) {
     })
   } catch (err) {
     console.error('Login error (CMS unreachable):', err)
-    return NextResponse.json(
-      { error: 'Unable to reach authentication service. Try again later.' },
-      { status: 503 },
-    )
+    const cause = err instanceof Error ? err.cause : undefined
+    const isConnectionRefused =
+      (cause instanceof Error && (cause as NodeJS.ErrnoException).code === 'ECONNREFUSED') ||
+      (err instanceof Error && (err as NodeJS.ErrnoException).code === 'ECONNREFUSED')
+    const message =
+      inProduction && (cmsIsLocalhost || isConnectionRefused)
+        ? 'Login is not configured for production. Set CMS_URL to your deployed CMS URL (e.g. https://your-cms.vercel.app) in Vercel → Project → Settings → Environment Variables.'
+        : 'Unable to reach authentication service. Try again later.'
+    return NextResponse.json({ error: message }, { status: 503 })
   }
 
   const data = await res.json().catch(() => ({}))
