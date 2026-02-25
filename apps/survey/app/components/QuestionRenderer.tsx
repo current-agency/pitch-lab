@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import type { SurveyQuestion, SurveyAnswers, SurveyAnswerValue } from '../types'
 
 type Props = {
@@ -149,47 +150,90 @@ export function QuestionRenderer({ question, value, onChange }: Props) {
   if (question.inputType === 'ranking') {
     const order = (Array.isArray(value) ? value : value ? [String(value)] : []) as string[]
     const options = question.options ?? []
-    const move = (index: number, dir: -1 | 1) => {
-      const base = order.length ? order : options.map((o) => o.value)
-      const next: string[] = base.filter((x): x is string => typeof x === 'string')
-      const j = index + dir
-      if (j < 0 || j >= next.length) return
-      const a = next[index]
-      const b = next[j]
-      if (a !== undefined && b !== undefined) {
-        next[index] = b
-        next[j] = a
-      }
-      onChange(key, next)
-    }
     const initOrder = (order.length
       ? order.filter((x): x is string => typeof x === 'string')
       : options.map((o) => o.value)
     ) as string[]
+
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+    const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+
+    const reorder = (fromIndex: number, toIndex: number) => {
+      if (fromIndex === toIndex) return
+      const next = [...initOrder]
+      const [removed] = next.splice(fromIndex, 1)
+      if (removed !== undefined) next.splice(toIndex, 0, removed)
+      onChange(key, next)
+    }
+
+    const handleDragStart = (e: React.DragEvent, index: number) => {
+      setDraggedIndex(index)
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', String(index))
+      e.dataTransfer.setData('application/json', JSON.stringify({ index }))
+    }
+
+    const handleDragEnd = () => {
+      setDraggedIndex(null)
+      setDragOverIndex(null)
+    }
+
+    const handleDragOver = (e: React.DragEvent, index: number) => {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      setDragOverIndex(index)
+    }
+
+    const handleDragLeave = () => {
+      setDragOverIndex(null)
+    }
+
+    const handleDrop = (e: React.DragEvent, toIndex: number) => {
+      e.preventDefault()
+      const fromIndex = draggedIndex ?? parseInt(e.dataTransfer.getData('text/plain'), 10)
+      if (Number.isNaN(fromIndex) || fromIndex === toIndex) {
+        setDraggedIndex(null)
+        setDragOverIndex(null)
+        return
+      }
+      reorder(fromIndex, toIndex)
+      setDraggedIndex(null)
+      setDragOverIndex(null)
+    }
+
     return (
       <div className="space-y-2">
+        <p className="mb-2 text-sm text-slate-600">Drag and drop to reorder. Most important at the top.</p>
         {initOrder.map((v, i) => (
-          <div key={v} className="flex items-center gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-2">
+          <div
+            key={v}
+            draggable
+            onDragStart={(e) => handleDragStart(e, i)}
+            onDragEnd={handleDragEnd}
+            onDragOver={(e) => handleDragOver(e, i)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, i)}
+            className={`flex cursor-grab active:cursor-grabbing items-center gap-2 rounded border px-3 py-2 transition-colors ${
+              draggedIndex === i
+                ? 'border-slate-400 bg-slate-100 opacity-70'
+                : dragOverIndex === i
+                  ? 'border-slate-400 border-dashed bg-slate-100'
+                  : 'border-slate-200 bg-slate-50'
+            }`}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key !== ' ' && e.key !== 'Enter') return
+              e.preventDefault()
+              const dir = e.key === 'Enter' ? -1 : 1
+              const toIndex = i + (e.shiftKey ? -dir : dir)
+              if (toIndex >= 0 && toIndex < initOrder.length) reorder(i, toIndex)
+            }}
+            aria-label={`${getOptionLabel(question, v)}, position ${i + 1} of ${initOrder.length}. Drag to reorder or use arrow keys.`}
+          >
+            <span className="select-none text-slate-400" aria-hidden>⋮⋮</span>
             <span className="text-slate-500">{i + 1}.</span>
             <span className="flex-1 text-slate-800">{getOptionLabel(question, v)}</span>
-            <button
-              type="button"
-              onClick={() => move(i, -1)}
-              disabled={i === 0}
-              className="rounded p-1 text-slate-600 hover:bg-slate-200 disabled:opacity-50"
-              aria-label="Move up"
-            >
-              ↑
-            </button>
-            <button
-              type="button"
-              onClick={() => move(i, 1)}
-              disabled={i === initOrder.length - 1}
-              className="rounded p-1 text-slate-600 hover:bg-slate-200 disabled:opacity-50"
-              aria-label="Move down"
-            >
-              ↓
-            </button>
           </div>
         ))}
       </div>

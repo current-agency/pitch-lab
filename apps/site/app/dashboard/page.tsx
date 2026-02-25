@@ -110,13 +110,10 @@ export default async function DashboardPage() {
   const userCompany = user?.company
   const companyId = typeof userCompany === 'object' && userCompany?.id ? userCompany.id : typeof userCompany === 'string' ? userCompany : null
   const surveyEnabled = typeof userCompany === 'object' && userCompany?.platformSurveyEnabled === true
-  const surveyCard =
-    companyId && surveyEnabled
-      ? { ...toSurveyCard(companyId), openInOverlay: true as const }
-      : null
+  const surveyCard = companyId && surveyEnabled ? toSurveyCard(companyId) : null
 
-  const cards: (CardData & { openInOverlay?: boolean })[] = [
-    ...imageChoiceCards.map((c) => ({ ...c, openInOverlay: true })),
+  const cards: CardData[] = [
+    ...imageChoiceCards,
     ...contentRankCards,
     ...(surveyCard ? [surveyCard] : []),
   ]
@@ -140,7 +137,6 @@ export default async function DashboardPage() {
                 description={card.stats[0]?.text}
                 categoryTag={card.stats[0]?.number}
                 href={card.link}
-                openInOverlay={card.openInOverlay}
               />
             ))}
           </div>
