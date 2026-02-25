@@ -48,7 +48,7 @@ export type SurveyAnswerValue =
   | string
   | number
   | string[]
-  | { pain?: number; frequency?: string; owner?: string; whatMakesHard?: string }
+  | { pain?: number; frequency?: string; owner?: string; whatMakesHard?: string; notApplicable?: boolean }
   | Record<string, string>
 
 /** Answers keyed by questionKey. */
