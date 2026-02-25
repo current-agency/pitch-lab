@@ -6,13 +6,14 @@ import { mongooseAdapter } from '@payloadcms/db-mongodb'
 import { buildConfig } from 'payload'
 import { Companies } from './collections/Companies'
 import { ContentRank } from './collections/ContentRank'
-import { CsvUploads } from './collections/CsvUploads'
-import { FillInTheBlank } from './collections/FillInTheBlank'
 import { QuestionsBank } from './collections/QuestionsBank'
 import { ImageChoiceAssessments } from './collections/ImageChoiceAssessments'
 import { Media } from './collections/Media'
 import { MigrationReviewSession, generateSessionId } from './collections/MigrationReviewSession'
+import { PlatformSurveyQuestions } from './collections/PlatformSurveyQuestions'
+import { PlatformSurveyResponses } from './collections/PlatformSurveyResponses'
 import { Users } from './collections/Users'
+import { SECTION_LABELS, sortGroupedSections } from './lib/platform-survey-section-order'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -48,6 +49,90 @@ export default buildConfig({
           return Response.json({ error: 'Not found' }, { status: 404 })
         }
         return Response.json(doc)
+      },
+    },
+    {
+      path: '/platform-survey-questions/grouped',
+      method: 'get',
+      handler: async (req) => {
+        try {
+          const result = await req.payload.find({
+            collection: 'platform-survey-questions',
+            where: { isActive: { equals: true } },
+            sort: 'section,order',
+            limit: 500,
+            overrideAccess: true,
+          })
+          const sections = new Map<string, { sectionLabel: string; section: string; questions: typeof result.docs }>()
+          for (const doc of result.docs) {
+            const d = doc as { section: string }
+            const key = d.section
+            if (!sections.has(key)) {
+              sections.set(key, { section: key, sectionLabel: SECTION_LABELS[key] ?? key, questions: [] })
+            }
+            sections.get(key)!.questions.push(doc)
+          }
+          for (const section of sections.values()) {
+            section.questions.sort((a, b) => ((a as { order?: number }).order ?? 0) - ((b as { order?: number }).order ?? 0))
+          }
+          const grouped = sortGroupedSections(Array.from(sections.values()))
+          return Response.json({ sections: grouped })
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err)
+          console.error('[platform-survey-questions/grouped]', message)
+          return Response.json({ error: message }, { status: 500 })
+        }
+      },
+    },
+    {
+      path: '/platform-survey-config',
+      method: 'get',
+      handler: async (req) => {
+        try {
+          const url = new URL(req.url || '', 'http://localhost')
+          const companyId = url.searchParams.get('company')?.trim()
+          if (!companyId) {
+            return Response.json({ error: 'company query param required' }, { status: 400 })
+          }
+          const company = await req.payload.findByID({
+            collection: 'companies',
+            id: companyId,
+            depth: 0,
+            overrideAccess: true,
+          }) as { name?: string; platformSurveyEnabled?: boolean } | null
+          if (!company || !company.platformSurveyEnabled) {
+            return Response.json({ error: 'Company not found or survey not enabled for this company' }, { status: 404 })
+          }
+          const companyName = typeof company.name === 'string' && company.name.trim() ? company.name.trim() : ''
+          if (!companyName) {
+            return Response.json({ error: 'Company name not set' }, { status: 404 })
+          }
+          const result = await req.payload.find({
+            collection: 'platform-survey-questions',
+            where: { isActive: { equals: true } },
+            sort: 'section,order',
+            limit: 500,
+            overrideAccess: true,
+          })
+          const sections = new Map<string, { sectionLabel: string; section: string; questions: typeof result.docs }>()
+          for (const doc of result.docs) {
+            const d = doc as { section: string }
+            const key = d.section
+            if (!sections.has(key)) {
+              sections.set(key, { section: key, sectionLabel: SECTION_LABELS[key] ?? key, questions: [] })
+            }
+            sections.get(key)!.questions.push(doc)
+          }
+          for (const section of sections.values()) {
+            section.questions.sort((a, b) => ((a as { order?: number }).order ?? 0) - ((b as { order?: number }).order ?? 0))
+          }
+          const grouped = sortGroupedSections(Array.from(sections.values()))
+          return Response.json({ title: companyName, sections: grouped })
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err)
+          console.error('[platform-survey-config]', message)
+          return Response.json({ error: message }, { status: 500 })
+        }
       },
     },
     {
@@ -211,7 +296,7 @@ export default buildConfig({
       titleSuffix: ' | Site CMS',
     },
   },
-  collections: [Companies, Users, Media, CsvUploads, ImageChoiceAssessments, ContentRank, QuestionsBank, FillInTheBlank, MigrationReviewSession],
+  collections: [Companies, Users, Media, ImageChoiceAssessments, ContentRank, QuestionsBank, MigrationReviewSession, PlatformSurveyQuestions, PlatformSurveyResponses],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || 'change-me-in-production',
   typescript: {

@@ -38,14 +38,14 @@ export const ContentRank: CollectionConfig = {
     {
       name: 'screamingFrogCsv',
       type: 'upload',
-      relationTo: 'csv-uploads',
+      relationTo: 'media',
       required: true,
       admin: { description: 'ScreamingFrog crawl export (CSV)' },
     },
     {
       name: 'ga4Csv',
       type: 'upload',
-      relationTo: 'csv-uploads',
+      relationTo: 'media',
       required: true,
       admin: { description: 'GA4 report export (CSV)' },
     },

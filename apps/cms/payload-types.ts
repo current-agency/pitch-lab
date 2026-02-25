@@ -70,12 +70,12 @@ export interface Config {
     companies: Company;
     users: User;
     media: Media;
-    'csv-uploads': CsvUpload;
     'image-choice-assessments': ImageChoiceAssessment;
     'content-rank': ContentRank;
     'questions-bank': QuestionsBank;
-    'fill-in-the-blank': FillInTheBlank;
     'migration-review-sessions': MigrationReviewSession;
+    'platform-survey-questions': PlatformSurveyQuestion;
+    'platform-survey-responses': PlatformSurveyResponse;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -86,12 +86,12 @@ export interface Config {
     companies: CompaniesSelect<false> | CompaniesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
-    'csv-uploads': CsvUploadsSelect<false> | CsvUploadsSelect<true>;
     'image-choice-assessments': ImageChoiceAssessmentsSelect<false> | ImageChoiceAssessmentsSelect<true>;
     'content-rank': ContentRankSelect<false> | ContentRankSelect<true>;
     'questions-bank': QuestionsBankSelect<false> | QuestionsBankSelect<true>;
-    'fill-in-the-blank': FillInTheBlankSelect<false> | FillInTheBlankSelect<true>;
     'migration-review-sessions': MigrationReviewSessionsSelect<false> | MigrationReviewSessionsSelect<true>;
+    'platform-survey-questions': PlatformSurveyQuestionsSelect<false> | PlatformSurveyQuestionsSelect<true>;
+    'platform-survey-responses': PlatformSurveyResponsesSelect<false> | PlatformSurveyResponsesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -138,6 +138,10 @@ export interface Company {
    * Company name
    */
   name: string;
+  /**
+   * When enabled, this company is assigned the Platform Fit Quiz. Users can take the survey via a link with ?company=<this company id>. The company name is shown as the survey title.
+   */
+  platformSurveyEnabled?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -301,24 +305,6 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "csv-uploads".
- */
-export interface CsvUpload {
-  id: string;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "content-rank".
  */
 export interface ContentRank {
@@ -330,11 +316,11 @@ export interface ContentRank {
   /**
    * ScreamingFrog crawl export (CSV)
    */
-  screamingFrogCsv: string | CsvUpload;
+  screamingFrogCsv: string | Media;
   /**
    * GA4 report export (CSV)
    */
-  ga4Csv: string | CsvUpload;
+  ga4Csv: string | Media;
   /**
    * Company this content rank is assigned to
    */
@@ -362,39 +348,6 @@ export interface QuestionsBank {
    * The sentence with a blank. Use _____ or [blank] where the user fills in the answer.
    */
   text: string;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Fill in the blank activities. Add new questions inline or select from previously saved questions.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "fill-in-the-blank".
- */
-export interface FillInTheBlank {
-  id: string;
-  /**
-   * Title of this fill-in-the-blank activity
-   */
-  title: string;
-  /**
-   * Each item is either a new question (write below) or a previously saved question (select from list).
-   */
-  items: {
-    /**
-     * Add a new question or pick one you saved earlier
-     */
-    source: 'new' | 'saved';
-    /**
-     * The sentence with a blank (e.g. use _____ for the gap).
-     */
-    newText?: string | null;
-    /**
-     * Choose a question from the Questions Bank.
-     */
-    savedQuestion?: (string | null) | QuestionsBank;
-    id?: string | null;
-  }[];
   updatedAt: string;
   createdAt: string;
 }
@@ -430,6 +383,152 @@ export interface MigrationReviewSession {
     | number
     | boolean
     | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Platform Fit Quiz questions. Ordered by section then order.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "platform-survey-questions".
+ */
+export interface PlatformSurveyQuestion {
+  id: string;
+  /**
+   * Section this question belongs to. Section labels are fixed; editors can only add questions to existing sections.
+   */
+  section:
+    | 'content-complexity'
+    | 'editor-autonomy'
+    | 'marketing-personalization'
+    | 'integration-ecosystem'
+    | 'team-resources'
+    | 'scale-performance'
+    | 'budget-timeline'
+    | 'future-vision'
+    | 'day-in-the-life'
+    | 'workflow-builder'
+    | 'who-does-what'
+    | 'current-platform'
+    | 'future-state-wishlist';
+  /**
+   * Used for list ordering (section order, then order within section).
+   */
+  sectionSortOrder: number;
+  /**
+   * Sort order within the section
+   */
+  order: number;
+  /**
+   * Choose the question type first. The form will show only the fields needed for this type.
+   */
+  inputType:
+    | 'multi-select'
+    | 'single-select'
+    | 'rating-scale'
+    | 'ranking'
+    | 'text-input'
+    | 'pain-level-with-meta'
+    | 'matrix';
+  /**
+   * Slug-style identifier (e.g. content-types, technical-comfort)
+   */
+  questionKey: string;
+  /**
+   * The question text
+   */
+  questionText: string;
+  /**
+   * Optional subtitle/clarifying copy under the question
+   */
+  helpText?: string | null;
+  /**
+   * Choices (multi/single-select, ranking) or row labels (matrix). Use hasTextInput for "Other, describe: ___".
+   */
+  options?:
+    | {
+        label: string;
+        value: string;
+        hasTextInput?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Column labels for the matrix (one selection per row).
+   */
+  columns?:
+    | {
+        label: string;
+        value: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Minimum value (e.g. 1).
+   */
+  ratingMin?: number | null;
+  /**
+   * Maximum value (e.g. 5).
+   */
+  ratingMax?: number | null;
+  /**
+   * Labels at the low and high end of the scale.
+   */
+  ratingLabels?: {
+    minLabel?: string | null;
+    maxLabel?: string | null;
+  };
+  /**
+   * Whether the question must be answered
+   */
+  required?: boolean | null;
+  /**
+   * Hide question without deleting
+   */
+  isActive?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Platform Fit Quiz submissions
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "platform-survey-responses".
+ */
+export interface PlatformSurveyResponse {
+  id: string;
+  /**
+   * Company this response belongs to, when the survey was taken via ?company= link.
+   */
+  company?: (string | null) | Company;
+  /**
+   * When the response was submitted
+   */
+  submittedAt: string;
+  /**
+   * Optional respondent info
+   */
+  respondent?: {
+    name?: string | null;
+    email?: string | null;
+    company?: string | null;
+  };
+  /**
+   * Full questionKey → value answer map
+   */
+  answers:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Time from start to submit in seconds
+   */
+  completionTime?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -470,10 +569,6 @@ export interface PayloadLockedDocument {
         value: string | Media;
       } | null)
     | ({
-        relationTo: 'csv-uploads';
-        value: string | CsvUpload;
-      } | null)
-    | ({
         relationTo: 'image-choice-assessments';
         value: string | ImageChoiceAssessment;
       } | null)
@@ -486,12 +581,16 @@ export interface PayloadLockedDocument {
         value: string | QuestionsBank;
       } | null)
     | ({
-        relationTo: 'fill-in-the-blank';
-        value: string | FillInTheBlank;
-      } | null)
-    | ({
         relationTo: 'migration-review-sessions';
         value: string | MigrationReviewSession;
+      } | null)
+    | ({
+        relationTo: 'platform-survey-questions';
+        value: string | PlatformSurveyQuestion;
+      } | null)
+    | ({
+        relationTo: 'platform-survey-responses';
+        value: string | PlatformSurveyResponse;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -541,6 +640,7 @@ export interface PayloadMigration {
  */
 export interface CompaniesSelect<T extends boolean = true> {
   name?: T;
+  platformSurveyEnabled?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -617,23 +717,6 @@ export interface MediaSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "csv-uploads_select".
- */
-export interface CsvUploadsSelect<T extends boolean = true> {
-  updatedAt?: T;
-  createdAt?: T;
-  url?: T;
-  thumbnailURL?: T;
-  filename?: T;
-  mimeType?: T;
-  filesize?: T;
-  width?: T;
-  height?: T;
-  focalX?: T;
-  focalY?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "image-choice-assessments_select".
  */
 export interface ImageChoiceAssessmentsSelect<T extends boolean = true> {
@@ -679,23 +762,6 @@ export interface QuestionsBankSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "fill-in-the-blank_select".
- */
-export interface FillInTheBlankSelect<T extends boolean = true> {
-  title?: T;
-  items?:
-    | T
-    | {
-        source?: T;
-        newText?: T;
-        savedQuestion?: T;
-        id?: T;
-      };
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "migration-review-sessions_select".
  */
 export interface MigrationReviewSessionsSelect<T extends boolean = true> {
@@ -703,6 +769,65 @@ export interface MigrationReviewSessionsSelect<T extends boolean = true> {
   sessionId?: T;
   dataVersion?: T;
   decisions?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "platform-survey-questions_select".
+ */
+export interface PlatformSurveyQuestionsSelect<T extends boolean = true> {
+  section?: T;
+  sectionSortOrder?: T;
+  order?: T;
+  inputType?: T;
+  questionKey?: T;
+  questionText?: T;
+  helpText?: T;
+  options?:
+    | T
+    | {
+        label?: T;
+        value?: T;
+        hasTextInput?: T;
+        id?: T;
+      };
+  columns?:
+    | T
+    | {
+        label?: T;
+        value?: T;
+        id?: T;
+      };
+  ratingMin?: T;
+  ratingMax?: T;
+  ratingLabels?:
+    | T
+    | {
+        minLabel?: T;
+        maxLabel?: T;
+      };
+  required?: T;
+  isActive?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "platform-survey-responses_select".
+ */
+export interface PlatformSurveyResponsesSelect<T extends boolean = true> {
+  company?: T;
+  submittedAt?: T;
+  respondent?:
+    | T
+    | {
+        name?: T;
+        email?: T;
+        company?: T;
+      };
+  answers?: T;
+  completionTime?: T;
   updatedAt?: T;
   createdAt?: T;
 }

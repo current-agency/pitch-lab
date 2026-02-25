@@ -10,7 +10,7 @@ export const Companies: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'updatedAt'],
+    defaultColumns: ['name', 'platformSurveyEnabled', 'updatedAt'],
   },
   fields: [
     {
@@ -19,6 +19,14 @@ export const Companies: CollectionConfig = {
       required: true,
       admin: {
         description: 'Company name',
+      },
+    },
+    {
+      name: 'platformSurveyEnabled',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'When enabled, this company is assigned the Platform Fit Quiz. Users can take the survey via a link with ?company=<this company id>. The company name is shown as the survey title.',
       },
     },
   ],

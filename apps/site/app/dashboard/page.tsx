@@ -1,8 +1,8 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
-import { Feature222, type CardData } from '@/components/feature222'
-import { LogoutButton } from '@/components/logout-button'
+import { ActivityCard } from '@/components/activity-card'
+import { ApplicationShell5 } from '@/components/application-shell5'
+import { type CardData } from '@/components/feature222'
 
 const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
 const IMAGE_CHOICE_URL =
@@ -59,22 +59,32 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
-  const res = await fetch(`${CMS_URL}/api/users/me?depth=1`, {
-    headers: { Authorization: `JWT ${token}` },
-    next: { revalidate: 0 },
-  })
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok) {
+  const [userRes, contentRankRes] = await Promise.all([
+    fetch(`${CMS_URL}/api/users/me?depth=1`, {
+      headers: { Authorization: `JWT ${token}` },
+      next: { revalidate: 0 },
+    }),
+    fetch(
+      `${CMS_URL}/api/content-rank?where[isActive][equals]=true&limit=100&depth=0&select[id]=true&select[title]=true&select[accessToken]=true`,
+      { headers: { Authorization: `JWT ${token}` }, next: { revalidate: 0 } },
+    ),
+  ])
+
+  const data = await userRes.json().catch(() => ({}))
+  if (!userRes.ok) {
     redirect('/login')
   }
 
-  const user = data.user as { assignedApplications?: (string | AssignedAssessment)[] | null }
+  const user = data.user as {
+    firstName?: string | null
+    lastName?: string | null
+    email?: string | null
+    assignedApplications?: (string | AssignedAssessment)[] | null
+  }
   const assigned = user?.assignedApplications ?? []
+  const userName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || 'User'
+  const userEmail = user?.email ?? ''
 
-  const contentRankRes = await fetch(
-    `${CMS_URL}/api/content-rank?where[isActive][equals]=true&limit=100&depth=0&select[id]=true&select[title]=true&select[accessToken]=true`,
-    { headers: { Authorization: `JWT ${token}` }, next: { revalidate: 0 } },
-  )
   const contentRankData = await contentRankRes.json().catch(() => ({ docs: [] }))
   const contentRanks = (contentRankData.docs ?? []) as ContentRankInstance[]
 
@@ -85,34 +95,59 @@ export default async function DashboardPage() {
   const cards: CardData[] = [...imageChoiceCards, ...contentRankCards]
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-          <Link href="/" className="text-lg font-semibold text-slate-900">
-            Site
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link
-              href="/dashboard"
-              className="text-sm font-medium text-slate-700 hover:text-slate-900"
-            >
-              Dashboard
-            </Link>
-            <LogoutButton />
-          </nav>
-        </div>
-      </header>
-      <main className="mx-auto max-w-6xl px-4 py-10">
-        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+    <ApplicationShell5
+      user={{ name: userName, email: userEmail, avatar: '' }}
+    >
+      <div className="rounded-xl p-6">
+        <h1 className="text-2xl font-bold text-slate-900">
+          Hello, {user?.firstName ?? 'there'}
+        </h1>
         <p className="mt-1 text-slate-600">Choose an application to open.</p>
         {cards.length > 0 ? (
-          <Feature222 cards={cards} className="py-10" />
+          <div className="mt-10 flex flex-wrap gap-6">
+            {cards.map((card) => (
+              <ActivityCard
+                key={card.title + card.link}
+                status="To do"
+                title={card.title}
+                description={card.stats[0]?.text}
+                categoryTag={card.stats[0]?.number}
+                href={card.link}
+              />
+            ))}
+          </div>
         ) : (
           <p className="mt-8 rounded-lg border border-slate-200 bg-white px-4 py-6 text-slate-600">
             No applications assigned to you yet. Contact your administrator to get access.
           </p>
         )}
-      </main>
-    </div>
+
+        <hr className="my-12 border-slate-200" />
+
+        <div className="flex flex-wrap gap-6">
+          <ActivityCard
+            status="Completed"
+            title="Lorem ipsum dolor sit amet"
+            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+            categoryTag="A/B"
+            href="#"
+          />
+          <ActivityCard
+            status="Completed"
+            title="Consectetur adipiscing elit"
+            description="Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+            categoryTag="RANK"
+            href="#"
+          />
+          <ActivityCard
+            status="Completed"
+            title="Sed do eiusmod tempor"
+            description="Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
+            categoryTag="SURVEY"
+            href="#"
+          />
+        </div>
+      </div>
+    </ApplicationShell5>
   )
 }

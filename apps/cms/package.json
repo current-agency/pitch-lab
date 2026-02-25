@@ -12,7 +12,8 @@
     "generate:types": "payload generate:types",
     "generate:importmap": "payload generate:importmap",
     "fix-user": "tsx scripts/fix-first-user.ts",
-    "fix-content-rank-tokens": "tsx scripts/fix-content-rank-tokens.ts"
+    "fix-content-rank-tokens": "tsx scripts/fix-content-rank-tokens.ts",
+    "seed:platform-survey": "tsx scripts/seed-platform-survey-questions.ts"
   },
   "dependencies": {
     "@payloadcms/db-mongodb": "^3.0.0",

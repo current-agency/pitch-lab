@@ -1,0 +1,24 @@
+{
+  "version": 3,
+  "skills": {
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/anthropics/skills.git",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "skillFolderHash": "928950704df8a8b885c03de5da626331e6f29cf8",
+      "installedAt": "2026-02-20T15:42:59.868Z",
+      "updatedAt": "2026-02-20T15:42:59.868Z"
+    },
+    "prd": {
+      "source": "snarktank/ralph",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/snarktank/ralph.git",
+      "skillPath": "skills/prd/SKILL.md",
+      "skillFolderHash": "a4e8fd92a25b3c8ab08f66cc7e6eedbde658a843",
+      "installedAt": "2026-02-20T15:44:48.508Z",
+      "updatedAt": "2026-02-20T15:44:48.508Z"
+    }
+  },
+  "dismissed": {}
+}

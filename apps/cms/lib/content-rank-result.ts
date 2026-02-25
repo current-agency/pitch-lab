@@ -85,7 +85,7 @@ export async function handleContentRankResult(
       return { filename: val.filename ?? null, url: val.url ?? undefined }
     }
     const upload = await payload.findByID({
-      collection: 'csv-uploads',
+      collection: 'media',
       id: val,
       overrideAccess: true,
     }) as { filename?: string; url?: string } | null
@@ -93,8 +93,10 @@ export async function handleContentRankResult(
       ? { filename: upload.filename ?? null, url: upload.url ?? undefined }
       : { filename: null }
   }
-  const sfUpload = await getUpload(d.screamingFrogCsv)
-  const ga4Upload = await getUpload(d.ga4Csv)
+  const [sfUpload, ga4Upload] = await Promise.all([
+    getUpload(d.screamingFrogCsv),
+    getUpload(d.ga4Csv),
+  ])
   if (!sfUpload.filename || !ga4Upload.filename) {
     return Response.json(
       {
