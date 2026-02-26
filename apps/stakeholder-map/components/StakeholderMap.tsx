@@ -29,13 +29,12 @@ export type Stakeholder = {
   id: string
   name: string
   title?: string | null
-  company?: string | { id: string } | null
 }
 
 type Placement = Record<string, QuadrantId | 'unplaced'>
 
 type StakeholderMapProps = {
-  companyId: string
+  activityId: string
   token: string
 }
 
@@ -158,7 +157,7 @@ function DroppableQuadrant({
   )
 }
 
-export function StakeholderMap({ companyId, token }: StakeholderMapProps) {
+export function StakeholderMap({ activityId, token }: StakeholderMapProps) {
   const [stakeholders, setStakeholders] = useState<Stakeholder[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -168,34 +167,40 @@ export function StakeholderMap({ companyId, token }: StakeholderMapProps) {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
 
-  const fetchStakeholders = useCallback(async () => {
-    if (!companyId || !token) return
+  const fetchActivity = useCallback(async () => {
+    if (!activityId || !token) return
     setLoading(true)
     setError(null)
     try {
       const res = await fetch(
-        `/api/stakeholders?company=${encodeURIComponent(companyId)}&token=${encodeURIComponent(token)}`
+        `/api/activity/${encodeURIComponent(activityId)}?token=${encodeURIComponent(token)}`
       )
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError((data as { error?: string }).error ?? 'Failed to load stakeholders')
+        setError((data as { error?: string }).error ?? 'Failed to load activity')
         return
       }
-      const docs = (data as { docs?: Stakeholder[] }).docs ?? []
-      setStakeholders(docs)
+      const activity = data as { stakeholders?: Array<{ id: string; name?: string; title?: string | null }> }
+      const list = activity.stakeholders ?? []
+      const mapped: Stakeholder[] = list.map((s) => ({
+        id: String(s.id),
+        name: typeof s.name === 'string' ? s.name : 'Unnamed',
+        title: s.title ?? null,
+      }))
+      setStakeholders(mapped)
       const p: Placement = {}
-      docs.forEach((s) => (p[s.id] = 'unplaced'))
+      mapped.forEach((s) => (p[s.id] = 'unplaced'))
       setPlacement(p)
     } catch {
-      setError('Failed to load stakeholders')
+      setError('Failed to load activity')
     } finally {
       setLoading(false)
     }
-  }, [companyId, token])
+  }, [activityId, token])
 
   useEffect(() => {
-    fetchStakeholders()
-  }, [fetchStakeholders])
+    fetchActivity()
+  }, [fetchActivity])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -233,7 +238,7 @@ export function StakeholderMap({ companyId, token }: StakeholderMapProps) {
   )
 
   const handleSubmit = useCallback(async () => {
-    if (!allPlaced || !companyId || !token) return
+    if (!allPlaced || !activityId || !token) return
     setSubmitting(true)
     setSubmitError(null)
     try {
@@ -241,11 +246,11 @@ export function StakeholderMap({ companyId, token }: StakeholderMapProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          company: companyId,
+          activity: activityId,
           token,
           placements: Object.entries(placement)
             .filter(([, q]) => q !== 'unplaced')
-            .map(([stakeholder, quadrant]) => ({ stakeholder, quadrant })),
+            .map(([stakeholderId, quadrant]) => ({ stakeholderId, quadrant })),
         }),
       })
       const data = await res.json().catch(() => ({}))
@@ -259,12 +264,12 @@ export function StakeholderMap({ companyId, token }: StakeholderMapProps) {
     } finally {
       setSubmitting(false)
     }
-  }, [companyId, token, placement, allPlaced])
+  }, [activityId, token, placement, allPlaced])
 
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <p className="text-slate-600">Loading stakeholders…</p>
+        <p className="text-slate-600">Loading activity…</p>
       </div>
     )
   }

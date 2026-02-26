@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createLogger, getCmsUrl } from '@repo/env'
 import { validate } from '../../../../lib/validate'
-import { verifyAudiencePokerToken } from '../../../../lib/verify-token'
+import { verifyActivityLinkToken } from '@repo/env'
 
 const log = createLogger('audience-poker/submit')
 
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
         { status: 401 },
       )
     }
-    const submitUserId = verifyAudiencePokerToken(token)
+    const submitUserId = verifyActivityLinkToken(token)
     if (!submitUserId) {
       return NextResponse.json(
         { error: 'Invalid or expired link. Open this activity again from the dashboard.' },
@@ -120,7 +120,7 @@ export async function POST(request: Request) {
     if (!createRes.ok) {
       log.error('CMS create error:', createRes.status, createText)
       return NextResponse.json(
-        { error: createRes.status === 403 ? 'Not authorized to save submission. Set AUDIENCE_POKER_API_SECRET in CMS and app.' : 'Failed to save submission' },
+        { error: createRes.status === 403 ? 'Not authorized to save submission. Set ACTIVITY_LINK_SECRET in CMS and this app.' : 'Failed to save submission' },
         { status: createRes.status >= 500 ? 502 : createRes.status },
       )
     }
@@ -136,8 +136,8 @@ export async function POST(request: Request) {
 }
 
 function getCmsHeaders(): Record<string, string> {
-  const secret = process.env.AUDIENCE_POKER_API_SECRET
+  const secret = process.env.ACTIVITY_LINK_SECRET
   const out: Record<string, string> = {}
-  if (secret) out['x-audience-poker-secret'] = secret
+  if (secret) out['x-activity-app-secret'] = secret
   return out
 }

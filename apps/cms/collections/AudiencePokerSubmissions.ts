@@ -11,13 +11,13 @@ export const AudiencePokerSubmissions: CollectionConfig = {
   },
   access: {
     create: ({ req }) => {
-      const secret = process.env.AUDIENCE_POKER_API_SECRET
+      const secret = process.env.ACTIVITY_LINK_SECRET
       if (!secret) return true
-      return req.headers?.get?.('x-audience-poker-secret') === secret || (req.user as UserLike)?.userType === 'admin'
+      return req.headers?.get?.('x-activity-app-secret') === secret || (req.user as UserLike)?.userType === 'admin'
     },
     read: ({ req }) => {
-      const secret = process.env.AUDIENCE_POKER_API_SECRET
-      if (secret && req.headers?.get?.('x-audience-poker-secret') === secret) return true
+      const secret = process.env.ACTIVITY_LINK_SECRET
+      if (secret && req.headers?.get?.('x-activity-app-secret') === secret) return true
       return (req.user as UserLike)?.userType === 'admin'
     },
     update: () => false,

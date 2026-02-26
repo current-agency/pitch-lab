@@ -79,7 +79,6 @@ export interface Config {
     'platform-survey-questions': PlatformSurveyQuestion;
     'platform-survey-responses': PlatformSurveyResponse;
     faqs: Faq;
-    stakeholders: Stakeholder;
     'stakeholder-map-activities': StakeholderMapActivity;
     'stakeholder-map-submissions': StakeholderMapSubmission;
     'payload-kv': PayloadKv;
@@ -101,7 +100,6 @@ export interface Config {
     'platform-survey-questions': PlatformSurveyQuestionsSelect<false> | PlatformSurveyQuestionsSelect<true>;
     'platform-survey-responses': PlatformSurveyResponsesSelect<false> | PlatformSurveyResponsesSelect<true>;
     faqs: FaqsSelect<false> | FaqsSelect<true>;
-    stakeholders: StakeholdersSelect<false> | StakeholdersSelect<true>;
     'stakeholder-map-activities': StakeholderMapActivitiesSelect<false> | StakeholderMapActivitiesSelect<true>;
     'stakeholder-map-submissions': StakeholderMapSubmissionsSelect<false> | StakeholderMapSubmissionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -390,7 +388,7 @@ export interface AudiencePokerActivity {
   createdAt: string;
 }
 /**
- * Stakeholder Map activities: assign to users so they can map stakeholders by influence and interest for a specific company.
+ * Create an activity, set the company, then add stakeholders. Assign the activity to users so they can map those stakeholders by influence and interest.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "stakeholder-map-activities".
@@ -402,9 +400,27 @@ export interface StakeholderMapActivity {
    */
   title: string;
   /**
-   * Company whose stakeholders the user will map
+   * Company this stakeholder map is for
    */
   company: string | Company;
+  /**
+   * Stakeholders to place on the map. Add rows for each person; name is required.
+   */
+  stakeholders: {
+    /**
+     * Stakeholder name
+     */
+    name: string;
+    /**
+     * Job title or role (optional)
+     */
+    title?: string | null;
+    /**
+     * Facilitator-facing notes; not shown to the user
+     */
+    notes?: string | null;
+    id?: string | null;
+  }[];
   /**
    * Inactive activities are hidden from assignment lists
    */
@@ -716,33 +732,6 @@ export interface Faq {
   createdAt: string;
 }
 /**
- * Stakeholders for the Stakeholder Map exercise. Link to a company.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "stakeholders".
- */
-export interface Stakeholder {
-  id: string;
-  /**
-   * Stakeholder name
-   */
-  name: string;
-  /**
-   * Job title or role (optional)
-   */
-  title?: string | null;
-  /**
-   * Company this stakeholder belongs to
-   */
-  company: string | Company;
-  /**
-   * Facilitator-facing notes; not shown to the client user
-   */
-  notes?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
  * Stakeholder Map submissions: placements of stakeholders in the 2×2 matrix.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -751,9 +740,9 @@ export interface Stakeholder {
 export interface StakeholderMapSubmission {
   id: string;
   /**
-   * Company this map is for
+   * Activity (stakeholder map) that was submitted
    */
-  company: string | Company;
+  activity: string | StakeholderMapActivity;
   /**
    * User who submitted the map
    */
@@ -767,9 +756,9 @@ export interface StakeholderMapSubmission {
    */
   placements: {
     /**
-     * Stakeholder
+     * ID of the stakeholder (from the activity’s stakeholders array)
      */
-    stakeholder: string | Stakeholder;
+    stakeholderId: string;
     /**
      * Quadrant in the matrix
      */
@@ -850,10 +839,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'faqs';
         value: string | Faq;
-      } | null)
-    | ({
-        relationTo: 'stakeholders';
-        value: string | Stakeholder;
       } | null)
     | ({
         relationTo: 'stakeholder-map-activities';
@@ -1156,23 +1141,19 @@ export interface FaqsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "stakeholders_select".
- */
-export interface StakeholdersSelect<T extends boolean = true> {
-  name?: T;
-  title?: T;
-  company?: T;
-  notes?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "stakeholder-map-activities_select".
  */
 export interface StakeholderMapActivitiesSelect<T extends boolean = true> {
   title?: T;
   company?: T;
+  stakeholders?:
+    | T
+    | {
+        name?: T;
+        title?: T;
+        notes?: T;
+        id?: T;
+      };
   isActive?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1182,13 +1163,13 @@ export interface StakeholderMapActivitiesSelect<T extends boolean = true> {
  * via the `definition` "stakeholder-map-submissions_select".
  */
 export interface StakeholderMapSubmissionsSelect<T extends boolean = true> {
-  company?: T;
+  activity?: T;
   submittedBy?: T;
   submittedAt?: T;
   placements?:
     | T
     | {
-        stakeholder?: T;
+        stakeholderId?: T;
         quadrant?: T;
         id?: T;
       };

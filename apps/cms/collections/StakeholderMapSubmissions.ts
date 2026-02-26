@@ -11,15 +11,15 @@ export const StakeholderMapSubmissions: CollectionConfig = {
   slug: 'stakeholder-map-submissions',
   admin: {
     useAsTitle: 'submittedBy',
-    defaultColumns: ['company', 'submittedBy', 'submittedAt'],
+    defaultColumns: ['activity', 'submittedBy', 'submittedAt'],
     description: 'Stakeholder Map submissions: placements of stakeholders in the 2×2 matrix.',
   },
   access: {
     read: ({ req }) => Boolean(req.user),
     create: ({ req }) => {
       if (req.user) return true
-      const secret = process.env.STAKEHOLDER_MAP_API_SECRET
-      if (secret && req.headers?.get?.('x-stakeholder-map-secret') === secret) return true
+      const secret = process.env.ACTIVITY_LINK_SECRET
+      if (secret && req.headers?.get?.('x-activity-app-secret') === secret) return true
       return false
     },
     update: ({ req }) => Boolean(req.user),
@@ -27,11 +27,11 @@ export const StakeholderMapSubmissions: CollectionConfig = {
   },
   fields: [
     {
-      name: 'company',
+      name: 'activity',
       type: 'relationship',
-      relationTo: 'companies',
+      relationTo: 'stakeholder-map-activities',
       required: true,
-      admin: { description: 'Company this map is for' },
+      admin: { description: 'Activity (stakeholder map) that was submitted' },
     },
     {
       name: 'submittedBy',
@@ -54,11 +54,10 @@ export const StakeholderMapSubmissions: CollectionConfig = {
       admin: { description: 'Stakeholder placed in each quadrant' },
       fields: [
         {
-          name: 'stakeholder',
-          type: 'relationship',
-          relationTo: 'stakeholders',
+          name: 'stakeholderId',
+          type: 'text',
           required: true,
-          admin: { description: 'Stakeholder' },
+          admin: { description: 'ID of the stakeholder (from the activity’s stakeholders array)' },
         },
         {
           name: 'quadrant',

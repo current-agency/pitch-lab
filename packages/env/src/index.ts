@@ -1,3 +1,8 @@
+export {
+  createActivityLinkToken,
+  verifyActivityLinkToken,
+} from './activity-link-token'
+
 /**
  * Returns the CMS base URL with no trailing slash.
  * Used by apps that call the Payload CMS API (e.g. audience-poker, image-choice, site).

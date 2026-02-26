@@ -18,7 +18,6 @@ import { Users } from './collections/Users'
 import { Faqs } from './collections/Faqs'
 import { StakeholderMapActivities } from './collections/StakeholderMapActivities'
 import { StakeholderMapSubmissions } from './collections/StakeholderMapSubmissions'
-import { Stakeholders } from './collections/Stakeholders'
 import { SECTION_LABELS, sortGroupedSections } from './lib/platform-survey-section-order'
 
 const filename = fileURLToPath(import.meta.url)
@@ -319,7 +318,7 @@ export default buildConfig({
     // Avoid hydration warnings when browser extensions (e.g. cz-shortcut-listen) modify <body>
     suppressHydrationWarning: true,
   },
-  collections: [Companies, Users, Media, ImageChoiceAssessments, ImageChoiceResponses, AudiencePokerActivities, AudiencePokerSubmissions, ContentRank, MigrationReviewSession, PlatformSurveyQuestions, PlatformSurveyResponses, Faqs, Stakeholders, StakeholderMapActivities, StakeholderMapSubmissions],
+  collections: [Companies, Users, Media, ImageChoiceAssessments, ImageChoiceResponses, AudiencePokerActivities, AudiencePokerSubmissions, ContentRank, MigrationReviewSession, PlatformSurveyQuestions, PlatformSurveyResponses, Faqs, StakeholderMapActivities, StakeholderMapSubmissions],
   editor: lexicalEditor(),
   secret: payloadSecret || 'change-me-in-production',
   typescript: {

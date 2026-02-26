@@ -128,8 +128,7 @@ Each app may have its own `.env`; copy from the app’s `.env.example` and set v
 |-----|----------|----------|-------------|
 | **cms** | `PAYLOAD_SECRET` | Yes (prod) | Payload auth secret; must not be default in production. |
 | **cms** | `DATABASE_URI` / `MONGODB_URI` | Yes | MongoDB connection string. |
-| **cms** | `AUDIENCE_POKER_API_SECRET` | Optional | If set, Audience Poker submissions API accepts `x-audience-poker-secret` for server-to-server calls. |
-| **cms** | `STAKEHOLDER_MAP_API_SECRET` | Optional | If set, Stakeholders and Stakeholder Map submissions accept `x-stakeholder-map-secret` for server-to-server calls. |
+| **cms** | `ACTIVITY_LINK_SECRET` | Optional | Same as site and activity apps; when set, activity apps send it as `x-activity-app-secret` for create/read on responses and submissions. |
 | **site** | `CMS_URL` | Yes | Base URL of the CMS (e.g. `http://localhost:3001`). No trailing slash. |
 | **site** | `NEXT_PUBLIC_DASHBOARD_URL` | Optional | Public URL of this site (for links back from other apps). |
 | **site** | `NEXT_PUBLIC_IMAGE_CHOICE_URL` | Optional | URL of the image-choice app (defaults to localhost:3002). |
@@ -137,20 +136,17 @@ Each app may have its own `.env`; copy from the app’s `.env.example` and set v
 | **site** | `NEXT_PUBLIC_SURVEY_URL` | Optional | URL of the survey app. |
 | **site** | `NEXT_PUBLIC_AUDIENCE_POKER_URL` | Optional | URL of the audience-poker app. |
 | **site** | `NEXT_PUBLIC_STAKEHOLDER_MAP_URL` | Optional | URL of the stakeholder-map app (defaults to localhost:3008). |
-| **site** | `IMAGE_CHOICE_TOKEN_SECRET` | Optional | Shared secret with image-choice for JWT links; required for dashboard image-choice links. |
-| **site** | `AUDIENCE_POKER_TOKEN_SECRET` | Optional | Shared secret with audience-poker for JWT links; required for dashboard audience-poker links. |
-| **site** | `STAKEHOLDER_MAP_TOKEN_SECRET` | Optional | Shared secret with stakeholder-map for token in dashboard link. |
+| **site** | `ACTIVITY_LINK_SECRET` | Optional | Shared secret for activity links and app→CMS; set same in site, CMS, and each activity app (image-choice, audience-poker, stakeholder-map). |
 | **survey** | `CMS_URL` | Yes | Base URL of the CMS. |
 | **survey** | `NEXT_PUBLIC_DASHBOARD_URL` | Optional | “Back to PitchLab dashboard” link when set. |
 | **image-choice** | `CMS_URL` | Yes | Base URL of the CMS. |
-| **image-choice** | `IMAGE_CHOICE_TOKEN_SECRET` | Yes (dashboard links) | Must match site; used to verify JWT from dashboard. |
+| **image-choice** | `ACTIVITY_LINK_SECRET` | Yes (dashboard + CMS) | Must match site and CMS; used for link token and when saving responses to CMS. |
 | **image-choice** | `NEXT_PUBLIC_DASHBOARD_URL` | Optional | Back-to-dashboard link. |
 | **audience-poker** | `CMS_URL` | Yes | Base URL of the CMS. |
-| **audience-poker** | `AUDIENCE_POKER_TOKEN_SECRET` | Yes (dashboard links) | Must match site; used to verify JWT from dashboard. |
+| **audience-poker** | `ACTIVITY_LINK_SECRET` | Yes (dashboard + CMS) | Must match site and CMS; used for link token and when saving submissions to CMS. |
 | **audience-poker** | `NEXT_PUBLIC_DASHBOARD_URL` | Optional | Back-to-dashboard link. |
 | **stakeholder-map** | `CMS_URL` | Yes | Base URL of the CMS. |
-| **stakeholder-map** | `STAKEHOLDER_MAP_TOKEN_SECRET` | Yes (dashboard links) | Must match site; used to verify token from dashboard. |
-| **stakeholder-map** | `STAKEHOLDER_MAP_API_SECRET` | Optional | If set, app sends it when calling CMS; set same in CMS for server-to-server. |
+| **stakeholder-map** | `ACTIVITY_LINK_SECRET` | Yes (dashboard + CMS) | Must match site and CMS; used for link token and when calling CMS for activity/submissions. |
 | **stakeholder-map** | `NEXT_PUBLIC_DASHBOARD_URL` | Optional | Back-to-dashboard link. |
 | **content-rank** | `CMS_URL` | Yes | Base URL of the CMS. |
 

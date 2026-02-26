@@ -9,6 +9,7 @@
     "start": "next start --port 3002"
   },
   "dependencies": {
+    "@repo/env": "workspace:*",
     "@repo/ui": "workspace:*",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",

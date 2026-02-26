@@ -9,9 +9,9 @@ export const ImageChoiceResponses: CollectionConfig = {
   },
   access: {
     create: ({ req }) => {
-      const secret = process.env.IMAGE_CHOICE_API_SECRET
+      const secret = process.env.ACTIVITY_LINK_SECRET
       if (!secret) return true
-      return req.headers?.get?.('x-image-choice-secret') === secret
+      return req.headers?.get?.('x-activity-app-secret') === secret
     },
     read: ({ req }) => (req.user as { userType?: string })?.userType === 'admin',
     update: () => false,

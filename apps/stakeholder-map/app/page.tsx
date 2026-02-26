@@ -6,11 +6,11 @@ import { StakeholderMap } from '../components/StakeholderMap'
 
 function StakeholderMapPageInner() {
   const searchParams = useSearchParams()
-  const companyId = searchParams.get('company')
+  const activityId = searchParams.get('activity')
   const token = searchParams.get('token')
 
-  if (!companyId || !token) {
-    const missing = [!companyId && 'company', !token && 'token'].filter(Boolean).join(' and ')
+  if (!activityId || !token) {
+    const missing = [!activityId && 'activity', !token && 'token'].filter(Boolean).join(' and ')
     return (
       <div className="mx-auto max-w-md rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-800">
         <p className="font-semibold">Missing {missing}</p>
@@ -20,8 +20,8 @@ function StakeholderMapPageInner() {
         </p>
         <p className="mt-3 text-xs text-amber-700">
           If you came from the dashboard and still see this, ask your admin to set{' '}
-          <code className="rounded bg-amber-100 px-1">STAKEHOLDER_MAP_TOKEN_SECRET</code> in both
-          the site and this app.
+          <code className="rounded bg-amber-100 px-1">ACTIVITY_LINK_SECRET</code> in both the site
+          and this app.
         </p>
       </div>
     )
@@ -34,7 +34,7 @@ function StakeholderMapPageInner() {
         <p className="text-sm text-slate-600">
           Drag stakeholders from the list into the quadrants by influence and interest.
         </p>
-        <StakeholderMap companyId={companyId} token={token} />
+        <StakeholderMap activityId={activityId} token={token} />
       </div>
     </div>
   )

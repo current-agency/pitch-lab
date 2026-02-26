@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { verifyImageChoiceToken } from '../../../lib/verify-token'
+import { verifyActivityLinkToken } from '@repo/env'
 
 const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
 
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
     let userId: string | null = null
     if (token && typeof token === 'string') {
-      userId = verifyImageChoiceToken(token)
+      userId = verifyActivityLinkToken(token)
     }
 
     const base = CMS_URL.replace(/\/$/, '')
@@ -30,8 +30,8 @@ export async function POST(request: Request) {
       'Content-Type': 'application/json',
       Accept: 'application/json',
     }
-    if (process.env.IMAGE_CHOICE_API_SECRET) {
-      headers['x-image-choice-secret'] = process.env.IMAGE_CHOICE_API_SECRET
+    if (process.env.ACTIVITY_LINK_SECRET) {
+      headers['x-activity-app-secret'] = process.env.ACTIVITY_LINK_SECRET
     }
 
     const payload: { assessment: string; responses: ResponseItem[]; user?: string } = {
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       console.error('[image-choice /api/responses] CMS error:', res.status, text)
       const is403 = res.status === 403
       const message = is403
-        ? 'CMS rejected the request (403). If CMS has IMAGE_CHOICE_API_SECRET set, set the same value in image-choice .env so the app can save responses.'
+        ? 'CMS rejected the request (403). Set ACTIVITY_LINK_SECRET to the same value in the CMS and this app.'
         : 'Failed to save responses'
       return NextResponse.json(
         { error: message, details: text || res.statusText },

@@ -4,9 +4,7 @@ import { ActivityCard } from '@/components/activity-card'
 import { ApplicationShell5 } from '@/components/application-shell5'
 import { type CardData } from '@/components/feature222'
 import { requireAuth } from '@/lib/auth'
-import { createAudiencePokerToken } from '@/lib/audience-poker-token'
-import { createImageChoiceToken } from '@/lib/image-choice-token'
-import { createStakeholderMapToken } from '@/lib/stakeholder-map-token'
+import { createActivityLinkToken } from '@repo/env'
 
 const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
 const DEFAULT_CARD_BACKGROUND =
@@ -65,7 +63,7 @@ function toImageChoiceCard(
   const title = typeof assessment === 'string' ? 'Assessment' : (assessment.title || 'Image choice')
   const description =
     typeof assessment === 'string' ? '' : (assessment.description || 'Time-based selection between two images')
-  const token = userId ? createImageChoiceToken(userId) : null
+  const token = userId ? createActivityLinkToken(userId) : null
   const link = token
     ? `${baseUrl}?assessment=${id}&token=${encodeURIComponent(token)}`
     : `${baseUrl}?assessment=${id}`
@@ -104,26 +102,12 @@ function toStakeholderMapCard(
   userId: string | null | undefined,
   baseUrl: string,
 ): CardData {
-  const id = typeof activity === 'string' ? activity : activity.id
+  const activityId = typeof activity === 'string' ? activity : activity.id
   const title = typeof activity === 'string' ? 'Stakeholder Map' : (activity.title || 'Stakeholder Map')
-  const companyId =
-    typeof activity === 'object' && activity.company
-      ? typeof activity.company === 'string'
-        ? activity.company
-        : activity.company.id
-      : null
-  if (!companyId) {
-    return {
-      title,
-      link: baseUrl,
-      background: DEFAULT_CARD_BACKGROUND,
-      stats: [{ number: 'Map', text: 'Map stakeholders by influence and interest' }],
-    }
-  }
-  const token = userId ? createStakeholderMapToken(userId) : null
+  const token = userId ? createActivityLinkToken(userId) : null
   const link = token
-    ? `${baseUrl}?company=${encodeURIComponent(companyId)}&token=${encodeURIComponent(token)}`
-    : `${baseUrl}?company=${encodeURIComponent(companyId)}`
+    ? `${baseUrl}?activity=${encodeURIComponent(activityId)}&token=${encodeURIComponent(token)}`
+    : `${baseUrl}?activity=${encodeURIComponent(activityId)}`
   return {
     title,
     link,
@@ -139,7 +123,7 @@ function toAudiencePokerCard(
 ): CardData {
   const id = typeof activity === 'string' ? activity : activity.id
   const title = typeof activity === 'string' ? 'Audience Poker' : (activity.title || 'Audience Poker')
-  const token = userId ? createAudiencePokerToken(userId) : null
+  const token = userId ? createActivityLinkToken(userId) : null
   const link = token
     ? `${baseUrl}/activity/${id}?token=${encodeURIComponent(token)}`
     : `${baseUrl}/activity/${id}`
@@ -200,15 +184,7 @@ export default async function DashboardPage() {
           return [toAudiencePokerCard(polymorphic.value as AssignedAudiencePokerActivity, user?.id, urls.audiencePoker)]
         }
         if (polymorphic.relationTo === 'stakeholder-map-activities') {
-          const act = polymorphic.value as AssignedStakeholderMapActivity
-          const companyId =
-            typeof act === 'object' && act?.company
-              ? typeof act.company === 'string'
-                ? act.company
-                : act.company?.id
-              : null
-          if (!companyId) return []
-          return [toStakeholderMapCard(act, user?.id, urls.stakeholderMap)]
+          return [toStakeholderMapCard(polymorphic.value as AssignedStakeholderMapActivity, user?.id, urls.stakeholderMap)]
         }
       }
       // Legacy: plain ID or populated image-choice doc (no relationTo)
