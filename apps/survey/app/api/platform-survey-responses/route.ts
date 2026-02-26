@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     }
     const base = CMS_URL.replace(/\/$/, '')
     const headers: Record<string, string> = { 'Content-Type': 'application/json', Accept: 'application/json' }
-    if (process.env.PLATFORM_SURVEY_API_SECRET) headers['x-platform-survey-secret'] = process.env.PLATFORM_SURVEY_API_SECRET
+    if (process.env.ACTIVITY_LINK_SECRET) headers['x-activity-app-secret'] = process.env.ACTIVITY_LINK_SECRET
     const res = await fetch(`${base}/api/platform-survey-responses`, {
       method: 'POST',
       headers,

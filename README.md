@@ -4,11 +4,13 @@ A Turborepo monorepo with **Payload CMS** and multiple **Next.js** front-end app
 
 ## Current state
 
-- **Site (dashboard):** Landing, login/signup, and user dashboard. Login uses Payload’s `/api/users/login`; JWT is stored in an httpOnly cookie. Dashboard shows activity cards that link to the survey, image-choice, and content-rank apps.
-- **Survey (Platform Fit Quiz):** Loads questions from the CMS, records responses, and can show a “Back to PitchLab dashboard” link when `NEXT_PUBLIC_DASHBOARD_URL` is set.
-- **Image choice:** Time-based selection between two images; optional “Back to PitchLab dashboard” link via `NEXT_PUBLIC_DASHBOARD_URL`.
-- **Content rank:** ScreamingFrog + GA4 page ranking (move/lost/reuse); linked from the dashboard with optional token.
-- **CMS:** Payload admin, users, companies, platform survey questions/responses, image-choice assessments, content-rank instances. MongoDB backend.
+- **Site (dashboard):** Landing, login/signup, and user dashboard. Login uses Payload’s `/api/users/login`; JWT is stored in an httpOnly cookie. Dashboard shows activity cards. **Image-choice, audience-poker, stakeholder-map, survey, and content-rank** run as in-dashboard routes (`/dashboard/apps/...`); users stay on the site and use session (cookie) auth.
+- **Image choice (in-site):** Time-based selection between two images; served at `/dashboard/apps/image-choice`. Standalone `apps/image-choice` is kept for reference.
+- **Audience poker (in-site):** Chip-allocation activity at `/dashboard/apps/audience-poker/activity/[id]`. Standalone `apps/audience-poker` is kept for reference.
+- **Stakeholder map (in-site):** Influence/interest map at `/dashboard/apps/stakeholder-map`. Standalone `apps/stakeholder-map` is kept for reference.
+- **Survey (in-site):** Platform Fit Quiz at `/dashboard/apps/survey`; questions from CMS, responses stored with user’s company. Standalone `apps/survey` is kept for reference.
+- **Content rank (in-site):** ScreamingFrog + GA4 page ranking at `/dashboard/apps/content-rank`; instance and result loaded with cookie JWT. Standalone `apps/content-rank` is kept for reference (includes migration/review flow).
+- **CMS:** Payload admin, users, companies, platform survey questions/responses, image-choice assessments, audience-poker and stakeholder-map activities/submissions, content-rank. MongoDB backend.
 
 ## Structure
 
@@ -62,7 +64,7 @@ pitch-lab/
 
    ```bash
    cp apps/site/.env.example apps/site/.env
-   # CMS_URL (required). Optionally: NEXT_PUBLIC_IMAGE_CHOICE_URL, NEXT_PUBLIC_CONTENT_RANK_URL, NEXT_PUBLIC_SURVEY_URL
+   # CMS_URL (required). All activity apps (image-choice, audience-poker, stakeholder-map, survey, content-rank) run in-site.
    ```
 
 4. **Run all apps in development**
@@ -111,13 +113,13 @@ Or per app: `pnpm --filter @repo/site test`, `pnpm --filter @repo/survey test`.
 | App             | Port | Purpose |
 |-----------------|------|--------|
 | **cms**         | 3001 | Payload admin + REST/GraphQL API. Users, companies, platform survey, image-choice assessments, content-rank. |
-| **site**        | 3000 | Marketing landing, login/signup, user dashboard (links to survey, image-choice, content-rank). |
-| **image-choice** | 3002 | User selects between two images; time and choice can be stored. |
-| **content-rank** | 3003 | ScreamingFrog + GA4 page ranking: move, lost, reuse. |
-| **audience-poker** | 3007 | Chip-allocation activity; assigned from dashboard; optional “Back to PitchLab dashboard” link. |
-| **stakeholder-map** | 3008 | Stakeholder map by influence/interest; linked from dashboard with company + token. |
+| **site**        | 3000 | Marketing landing, login/signup, user dashboard. Hosts image-choice, audience-poker, stakeholder-map, survey, and content-rank as dashboard routes. |
+| **image-choice** | 3002 | Standalone app (optional). In-site version at `/dashboard/apps/image-choice`. |
+| **content-rank** | 3003 | Standalone app (optional). In-site version at `/dashboard/apps/content-rank`; also has migration/review flow. |
+| **audience-poker** | 3007 | Standalone app (optional). In-site version at `/dashboard/apps/audience-poker/activity/[id]`. |
+| **stakeholder-map** | 3008 | Standalone app (optional). In-site version at `/dashboard/apps/stakeholder-map`. |
 | **slider**      | 3004 | Slider between two ideas; position recorded. |
-| **survey**      | 3005 | Platform Fit Quiz: questions from CMS, responses stored; optional “Back to PitchLab dashboard” link. |
+| **survey**      | 3005 | Standalone app (optional). In-site version at `/dashboard/apps/survey`. |
 | **fill-blank**  | 3006 | Fill-in-the-blank text boxes; answers can be stored. |
 
 ## Environment variables
@@ -131,24 +133,12 @@ Each app may have its own `.env`; copy from the app’s `.env.example` and set v
 | **cms** | `ACTIVITY_LINK_SECRET` | Optional | Same as site and activity apps; when set, activity apps send it as `x-activity-app-secret` for create/read on responses and submissions. |
 | **site** | `CMS_URL` | Yes | Base URL of the CMS (e.g. `http://localhost:3001`). No trailing slash. |
 | **site** | `NEXT_PUBLIC_DASHBOARD_URL` | Optional | Public URL of this site (for links back from other apps). |
-| **site** | `NEXT_PUBLIC_IMAGE_CHOICE_URL` | Optional | URL of the image-choice app (defaults to localhost:3002). |
-| **site** | `NEXT_PUBLIC_CONTENT_RANK_URL` | Optional | URL of the content-rank app. |
-| **site** | `NEXT_PUBLIC_SURVEY_URL` | Optional | URL of the survey app. |
-| **site** | `NEXT_PUBLIC_AUDIENCE_POKER_URL` | Optional | URL of the audience-poker app. |
-| **site** | `NEXT_PUBLIC_STAKEHOLDER_MAP_URL` | Optional | URL of the stakeholder-map app (defaults to localhost:3008). |
-| **site** | `ACTIVITY_LINK_SECRET` | Optional | Shared secret for activity links and app→CMS; set same in site, CMS, and each activity app (image-choice, audience-poker, stakeholder-map). |
-| **survey** | `CMS_URL` | Yes | Base URL of the CMS. |
-| **survey** | `NEXT_PUBLIC_DASHBOARD_URL` | Optional | “Back to PitchLab dashboard” link when set. |
-| **image-choice** | `CMS_URL` | Yes | Base URL of the CMS. |
-| **image-choice** | `ACTIVITY_LINK_SECRET` | Yes (dashboard + CMS) | Must match site and CMS; used for link token and when saving responses to CMS. |
-| **image-choice** | `NEXT_PUBLIC_DASHBOARD_URL` | Optional | Back-to-dashboard link. |
-| **audience-poker** | `CMS_URL` | Yes | Base URL of the CMS. |
-| **audience-poker** | `ACTIVITY_LINK_SECRET` | Yes (dashboard + CMS) | Must match site and CMS; used for link token and when saving submissions to CMS. |
-| **audience-poker** | `NEXT_PUBLIC_DASHBOARD_URL` | Optional | Back-to-dashboard link. |
-| **stakeholder-map** | `CMS_URL` | Yes | Base URL of the CMS. |
-| **stakeholder-map** | `ACTIVITY_LINK_SECRET` | Yes (dashboard + CMS) | Must match site and CMS; used for link token and when calling CMS for activity/submissions. |
-| **stakeholder-map** | `NEXT_PUBLIC_DASHBOARD_URL` | Optional | Back-to-dashboard link. |
-| **content-rank** | `CMS_URL` | Yes | Base URL of the CMS. |
+| **site** | `ACTIVITY_LINK_SECRET` | Optional | Same as CMS; used by the site to proxy survey questions/config to the CMS. In-site survey responses and content-rank use cookie JWT. |
+| **survey** (standalone) | `CMS_URL` | If run | Only needed if running the standalone app; in-site flow uses the site’s CMS_URL. |
+| **image-choice** (standalone) | `CMS_URL` | If run | Only needed if running the standalone app; in-site flow uses the site’s CMS_URL. |
+| **audience-poker** (standalone) | `CMS_URL` | If run | Only needed if running the standalone app; in-site flow uses the site’s CMS_URL. |
+| **stakeholder-map** (standalone) | `CMS_URL` | If run | Only needed if running the standalone app; in-site flow uses the site’s CMS_URL. |
+| **content-rank** (standalone) | `CMS_URL` | If run | Only needed if running the standalone app; in-site flow uses the site’s CMS_URL. |
 
 See each app’s `.env.example` for a full list and defaults.
 

@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       return Response.json({ error: 'company query param required' }, { status: 400 })
     }
     const headers: Record<string, string> = { Accept: 'application/json' }
-    if (process.env.PLATFORM_SURVEY_API_SECRET) headers['x-platform-survey-secret'] = process.env.PLATFORM_SURVEY_API_SECRET
+    if (process.env.ACTIVITY_LINK_SECRET) headers['x-activity-app-secret'] = process.env.ACTIVITY_LINK_SECRET
     const res = await fetch(buildConfigUrl(cmsUrl, company), {
       cache: 'no-store',
       headers,

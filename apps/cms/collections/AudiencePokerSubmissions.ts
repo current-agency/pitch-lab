@@ -11,9 +11,10 @@ export const AudiencePokerSubmissions: CollectionConfig = {
   },
   access: {
     create: ({ req }) => {
+      if (req.user) return true
       const secret = process.env.ACTIVITY_LINK_SECRET
       if (!secret) return true
-      return req.headers?.get?.('x-activity-app-secret') === secret || (req.user as UserLike)?.userType === 'admin'
+      return req.headers?.get?.('x-activity-app-secret') === secret
     },
     read: ({ req }) => {
       const secret = process.env.ACTIVITY_LINK_SECRET

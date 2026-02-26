@@ -9,6 +9,7 @@ export const ImageChoiceResponses: CollectionConfig = {
   },
   access: {
     create: ({ req }) => {
+      if (req.user) return true
       const secret = process.env.ACTIVITY_LINK_SECRET
       if (!secret) return true
       return req.headers?.get?.('x-activity-app-secret') === secret

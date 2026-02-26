@@ -7,8 +7,8 @@ const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
 
 function surveyApiHeaders(): Record<string, string> {
   const headers: Record<string, string> = { Accept: 'application/json' }
-  const secret = process.env.PLATFORM_SURVEY_API_SECRET
-  if (secret) headers['x-platform-survey-secret'] = secret
+  const secret = process.env.ACTIVITY_LINK_SECRET
+  if (secret) headers['x-activity-app-secret'] = secret
   return headers
 }
 

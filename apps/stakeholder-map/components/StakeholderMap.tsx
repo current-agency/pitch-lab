@@ -283,6 +283,20 @@ export function StakeholderMap({ activityId, token }: StakeholderMapProps) {
     )
   }
 
+  if (stakeholders.length === 0) {
+    return (
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
+        <p className="font-medium">No stakeholders in this activity</p>
+        <p className="mt-1 text-sm">
+          This activity has no stakeholders listed. In the CMS, open the Stakeholder Map activity and add
+          stakeholders in the &quot;Stakeholders&quot; array. If this works locally but not in production, check
+          that <strong>ACTIVITY_LINK_SECRET</strong> is set to the same value in both the CMS and this app, and
+          that <strong>CMS_URL</strong> in this app points to your production CMS.
+        </p>
+      </div>
+    )
+  }
+
   if (submitted) {
     return (
       <div className="space-y-6">

@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const base = CMS_URL.replace(/\/$/, '')
     const headers: Record<string, string> = { Accept: 'application/json' }
-    if (process.env.PLATFORM_SURVEY_API_SECRET) headers['x-platform-survey-secret'] = process.env.PLATFORM_SURVEY_API_SECRET
+    if (process.env.ACTIVITY_LINK_SECRET) headers['x-activity-app-secret'] = process.env.ACTIVITY_LINK_SECRET
     const res = await fetch(`${base}/api/platform-survey-questions/grouped`, {
       cache: 'no-store',
       headers,

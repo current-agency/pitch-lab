@@ -68,8 +68,8 @@ export default buildConfig({
       method: 'get',
       handler: async (req) => {
         try {
-          const surveySecret = process.env.PLATFORM_SURVEY_API_SECRET
-          if (surveySecret && req.headers?.get?.('x-platform-survey-secret') !== surveySecret) {
+          const secret = process.env.ACTIVITY_LINK_SECRET
+          if (secret && req.headers?.get?.('x-activity-app-secret') !== secret) {
             return Response.json({ error: 'Unauthorized' }, { status: 401 })
           }
           const result = await req.payload.find({
@@ -105,8 +105,8 @@ export default buildConfig({
       method: 'get',
       handler: async (req) => {
         try {
-          const surveySecret = process.env.PLATFORM_SURVEY_API_SECRET
-          if (surveySecret && req.headers?.get?.('x-platform-survey-secret') !== surveySecret) {
+          const secret = process.env.ACTIVITY_LINK_SECRET
+          if (secret && req.headers?.get?.('x-activity-app-secret') !== secret) {
             return Response.json({ error: 'Unauthorized' }, { status: 401 })
           }
           const url = new URL(req.url || '', 'http://localhost')

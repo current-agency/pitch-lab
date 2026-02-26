@@ -9,9 +9,10 @@ export const PlatformSurveyResponses: CollectionConfig = {
   },
   access: {
     create: ({ req }) => {
-      const secret = process.env.PLATFORM_SURVEY_API_SECRET
+      if (req.user) return true
+      const secret = process.env.ACTIVITY_LINK_SECRET
       if (!secret) return true
-      return req.headers?.get?.('x-platform-survey-secret') === secret
+      return req.headers?.get?.('x-activity-app-secret') === secret
     },
     read: ({ req }) => (req.user as { userType?: string })?.userType === 'admin',
     update: () => false,

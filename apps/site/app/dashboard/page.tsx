@@ -4,7 +4,6 @@ import { ActivityCard } from '@/components/activity-card'
 import { ApplicationShell5 } from '@/components/application-shell5'
 import { type CardData } from '@/components/feature222'
 import { requireAuth } from '@/lib/auth'
-import { createActivityLinkToken } from '@repo/env'
 
 const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
 const DEFAULT_CARD_BACKGROUND =
@@ -14,16 +13,6 @@ const CONTENT_RANK_BACKGROUND =
 const SURVEY_BACKGROUND =
   'https://deifkwefumgah.cloudfront.net/shadcnblocks/block/photos/simone-hutsch-5oYbG-sEImY-unsplash.jpg'
 
-/** Read at runtime so Vercel production env vars are used (not build-time inlined). */
-function getAppUrls() {
-  return {
-    imageChoice: process.env.NEXT_PUBLIC_IMAGE_CHOICE_URL || 'http://localhost:3002',
-    contentRank: process.env.NEXT_PUBLIC_CONTENT_RANK_URL || 'http://localhost:3003',
-    survey: process.env.NEXT_PUBLIC_SURVEY_URL || 'http://localhost:3005',
-    audiencePoker: process.env.NEXT_PUBLIC_AUDIENCE_POKER_URL || 'http://localhost:3007',
-    stakeholderMap: process.env.NEXT_PUBLIC_STAKEHOLDER_MAP_URL || 'http://localhost:3008',
-  }
-}
 
 type AssignedAssessment = {
   id: string
@@ -54,19 +43,12 @@ type ContentRankInstance = {
   accessToken?: string | null
 }
 
-function toImageChoiceCard(
-  assessment: string | AssignedAssessment,
-  userId: string | null | undefined,
-  baseUrl: string,
-): CardData {
+function toImageChoiceCard(assessment: string | AssignedAssessment): CardData {
   const id = typeof assessment === 'string' ? assessment : assessment.id
   const title = typeof assessment === 'string' ? 'Assessment' : (assessment.title || 'Image choice')
   const description =
     typeof assessment === 'string' ? '' : (assessment.description || 'Time-based selection between two images')
-  const token = userId ? createActivityLinkToken(userId) : null
-  const link = token
-    ? `${baseUrl}?assessment=${id}&token=${encodeURIComponent(token)}`
-    : `${baseUrl}?assessment=${id}`
+  const link = `/dashboard/apps/image-choice?assessment=${encodeURIComponent(id)}`
   return {
     title,
     link,
@@ -75,11 +57,10 @@ function toImageChoiceCard(
   }
 }
 
-function toContentRankCard(instance: ContentRankInstance, baseUrl: string): CardData {
+function toContentRankCard(instance: ContentRankInstance): CardData {
   const id = typeof instance === 'string' ? instance : instance.id
   const title = typeof instance === 'string' ? 'Content rank' : (instance.title || 'Content rank')
-  const token = typeof instance === 'object' && instance.accessToken ? instance.accessToken : ''
-  const link = token ? `${baseUrl}?id=${id}&token=${encodeURIComponent(token)}` : `${baseUrl}?id=${id}`
+  const link = `/dashboard/apps/content-rank?instance=${encodeURIComponent(id)}`
   return {
     title,
     link,
@@ -88,26 +69,19 @@ function toContentRankCard(instance: ContentRankInstance, baseUrl: string): Card
   }
 }
 
-function toSurveyCard(companyId: string, baseUrl: string): CardData {
+function toSurveyCard(companyId: string): CardData {
   return {
     title: 'Platform Fit Quiz',
-    link: `${baseUrl}?company=${encodeURIComponent(companyId)}`,
+    link: `/dashboard/apps/survey?company=${encodeURIComponent(companyId)}`,
     background: SURVEY_BACKGROUND,
     stats: [{ number: 'Survey', text: 'Platform Fit Quiz: answer questions to get a platform recommendation' }],
   }
 }
 
-function toStakeholderMapCard(
-  activity: string | AssignedStakeholderMapActivity,
-  userId: string | null | undefined,
-  baseUrl: string,
-): CardData {
+function toStakeholderMapCard(activity: string | AssignedStakeholderMapActivity): CardData {
   const activityId = typeof activity === 'string' ? activity : activity.id
   const title = typeof activity === 'string' ? 'Stakeholder Map' : (activity.title || 'Stakeholder Map')
-  const token = userId ? createActivityLinkToken(userId) : null
-  const link = token
-    ? `${baseUrl}?activity=${encodeURIComponent(activityId)}&token=${encodeURIComponent(token)}`
-    : `${baseUrl}?activity=${encodeURIComponent(activityId)}`
+  const link = `/dashboard/apps/stakeholder-map?activity=${encodeURIComponent(activityId)}`
   return {
     title,
     link,
@@ -116,17 +90,10 @@ function toStakeholderMapCard(
   }
 }
 
-function toAudiencePokerCard(
-  activity: AssignedAudiencePokerActivity,
-  userId: string | null | undefined,
-  baseUrl: string,
-): CardData {
+function toAudiencePokerCard(activity: AssignedAudiencePokerActivity): CardData {
   const id = typeof activity === 'string' ? activity : activity.id
   const title = typeof activity === 'string' ? 'Audience Poker' : (activity.title || 'Audience Poker')
-  const token = userId ? createActivityLinkToken(userId) : null
-  const link = token
-    ? `${baseUrl}/activity/${id}?token=${encodeURIComponent(token)}`
-    : `${baseUrl}/activity/${id}`
+  const link = `/dashboard/apps/audience-poker/activity/${id}`
   return {
     title,
     link,
@@ -170,33 +137,31 @@ export default async function DashboardPage() {
   const contentRankData = await contentRankRes.json().catch(() => ({ docs: [] }))
   const contentRanks = (contentRankData.docs ?? []) as ContentRankInstance[]
 
-  const urls = getAppUrls()
-
   const applicationCards: CardData[] = assigned
     .filter((a): a is PolymorphicAssignment | string | AssignedAssessment | AssignedAudiencePokerActivity | AssignedStakeholderMapActivity => !!a)
     .flatMap((a) => {
       const polymorphic = a as PolymorphicAssignment
       if (typeof polymorphic === 'object' && 'relationTo' in polymorphic && polymorphic.value != null) {
         if (polymorphic.relationTo === 'image-choice-assessments') {
-          return [toImageChoiceCard(polymorphic.value as AssignedAssessment, user?.id, urls.imageChoice)]
+          return [toImageChoiceCard(polymorphic.value as AssignedAssessment)]
         }
         if (polymorphic.relationTo === 'audience-poker-activities') {
-          return [toAudiencePokerCard(polymorphic.value as AssignedAudiencePokerActivity, user?.id, urls.audiencePoker)]
+          return [toAudiencePokerCard(polymorphic.value as AssignedAudiencePokerActivity)]
         }
         if (polymorphic.relationTo === 'stakeholder-map-activities') {
-          return [toStakeholderMapCard(polymorphic.value as AssignedStakeholderMapActivity, user?.id, urls.stakeholderMap)]
+          return [toStakeholderMapCard(polymorphic.value as AssignedStakeholderMapActivity)]
         }
       }
       // Legacy: plain ID or populated image-choice doc (no relationTo)
       const legacy = a as string | AssignedAssessment
-      return [toImageChoiceCard(legacy, user?.id, urls.imageChoice)]
+      return [toImageChoiceCard(legacy)]
     })
-  const contentRankCards = contentRanks.map((c) => toContentRankCard(c, urls.contentRank))
+  const contentRankCards = contentRanks.map((c) => toContentRankCard(c))
 
   const userCompany = user?.company
   const companyId = typeof userCompany === 'object' && userCompany?.id ? userCompany.id : typeof userCompany === 'string' ? userCompany : null
   const surveyEnabled = typeof userCompany === 'object' && userCompany?.platformSurveyEnabled === true
-  const surveyCard = companyId && surveyEnabled ? toSurveyCard(companyId, urls.survey) : null
+  const surveyCard = companyId && surveyEnabled ? toSurveyCard(companyId) : null
 
   const cards: CardData[] = [
     ...applicationCards,
