@@ -12,8 +12,9 @@ export function verifyImageChoiceToken(token: string): string | null {
   const secret = process.env.IMAGE_CHOICE_TOKEN_SECRET
   if (!secret) return null
   const parts = token.split('.')
-  if (parts.length !== 2) return null
-  const [payloadB64, sig] = parts
+  const payloadB64 = parts[0]
+  const sig = parts[1]
+  if (parts.length !== 2 || !payloadB64 || !sig) return null
   const expectedSig = createHmac('sha256', secret).update(payloadB64).digest('base64url')
   if (sig !== expectedSig) return null
   try {

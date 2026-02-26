@@ -61,7 +61,8 @@ export default function ActivityPage({ params }: { params: Promise<{ id: string 
       const chipBudget = activity?.chipBudget ?? 0
       const othersSum = next.reduce((s, v, i) => (i === index ? s : s + v), 0)
       const maxForThis = chipBudget - othersSum
-      const newVal = Math.max(0, Math.min(maxForThis, next[index] + delta))
+      const current = next[index] ?? 0
+      const newVal = Math.max(0, Math.min(maxForThis, current + delta))
       next[index] = newVal
       return next
     })
@@ -89,7 +90,7 @@ export default function ActivityPage({ params }: { params: Promise<{ id: string 
       allocations: (activity.audiences || []).map((aud, i) => ({
         audienceIndex: i,
         audienceLabel: typeof aud === 'object' ? aud.label : 'Audience',
-        chips: allocations[i],
+        chips: allocations[i] ?? 0,
       })),
     }
     fetch('/api/audience-poker/submit', {
@@ -221,9 +222,9 @@ export default function ActivityPage({ params }: { params: Promise<{ id: string 
                     <p className="mt-1 text-sm text-amber-700">Two audiences can&apos;t tie</p>
                   ) : null}
                 </div>
-                {allocations[index] > 0 ? (
+                {(allocations[index] ?? 0) > 0 ? (
                   <div className="flex flex-wrap gap-2" aria-hidden>
-                    {Array.from({ length: allocations[index] }, (_, i) => (
+                    {Array.from({ length: allocations[index] ?? 0 }, (_, i) => (
                       <span
                         key={i}
                         className="h-4 w-4 shrink-0 rounded-full border-2 border-amber-600/50 bg-amber-400 shadow-sm"
@@ -236,21 +237,21 @@ export default function ActivityPage({ params }: { params: Promise<{ id: string 
                   <button
                     type="button"
                     onClick={() => handleAllocationChange(index, -1)}
-                    disabled={allocations[index] <= 0}
+                    disabled={(allocations[index] ?? 0) <= 0}
                     className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-slate-700 hover:bg-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Decrease chips"
                   >
                     −
                   </button>
                   <span className="min-w-[3rem] text-center text-xl font-bold tabular-nums text-slate-900">
-                    {allocations[index]}
+                    {allocations[index] ?? 0}
                   </span>
                   <button
                     type="button"
                     onClick={() => handleAllocationChange(index, 1)}
                     disabled={
-                      allocations[index] >=
-                      chipBudget - allocations.reduce((s, v, i) => (i === index ? s : s + v), 0)
+                      (allocations[index] ?? 0) >=
+                      chipBudget - allocations.reduce((s, v, i) => (i === index ? s : s + (v ?? 0)), 0)
                     }
                     className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-slate-700 hover:bg-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Increase chips"
