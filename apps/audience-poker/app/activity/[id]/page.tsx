@@ -40,8 +40,9 @@ export default function ActivityPage({ params }: { params: Promise<{ id: string 
     if (!token) return
     try {
       const parts = token.split('.')
-      if (parts.length !== 2) return
-      const payload = JSON.parse(atob(parts[0].replace(/-/g, '+').replace(/_/g, '/')))
+      const payloadB64 = parts[0]
+      if (parts.length !== 2 || !payloadB64) return
+      const payload = JSON.parse(atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/')))
       if (payload.userId) setUserId(payload.userId)
     } catch {
       // ignore

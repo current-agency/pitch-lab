@@ -45,7 +45,7 @@ type ContentRankInstance = {
   accessToken?: string | null
 }
 
-function toImageChoiceCard(assessment: AssignedAssessment, userId?: string | null): CardData {
+function toImageChoiceCard(assessment: string | AssignedAssessment, userId?: string | null): CardData {
   const id = typeof assessment === 'string' ? assessment : assessment.id
   const title = typeof assessment === 'string' ? 'Assessment' : (assessment.title || 'Image choice')
   const description =
