@@ -1,6 +1,7 @@
 'use client'
 
 import { use, useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Button, cn } from '@repo/ui'
 import { validate } from '@/components/apps/audience-poker/validate'
 import type { AudiencePokerActivity } from '@/components/apps/audience-poker/types'
@@ -99,8 +100,13 @@ export function AudiencePokerActivityClient({ params }: { params: Promise<{ id: 
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <p className="text-slate-600">Loading…</p>
+      <div className="mx-auto max-w-2xl space-y-4">
+        <Link href="/dashboard" className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+          ← Back to dashboard
+        </Link>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <p className="text-slate-600">Loading…</p>
+        </div>
       </div>
     )
   }
@@ -108,6 +114,9 @@ export function AudiencePokerActivityClient({ params }: { params: Promise<{ id: 
   if (error || !activity) {
     return (
       <div className="mx-auto max-w-2xl">
+        <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+          ← Back to dashboard
+        </Link>
         <h1 className="text-2xl font-bold text-slate-900">Audience Poker</h1>
         <p className="mt-4 text-red-600">{error ?? 'Activity not found.'}</p>
       </div>
@@ -120,6 +129,9 @@ export function AudiencePokerActivityClient({ params }: { params: Promise<{ id: 
         <div className="mx-auto max-w-md rounded-xl bg-white p-8 text-center shadow-sm">
           <h2 className="text-xl font-bold text-slate-900">Your chips are in.</h2>
           <p className="mt-2 text-slate-600">Thanks for participating.</p>
+          <Link href="/dashboard" className="mt-6 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+            ← Back to dashboard
+          </Link>
         </div>
       </div>
     )
@@ -143,6 +155,9 @@ export function AudiencePokerActivityClient({ params }: { params: Promise<{ id: 
 
   return (
     <div className="mx-auto max-w-2xl">
+      <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+        ← Back to dashboard
+      </Link>
       <h1 className="text-2xl font-bold text-slate-900">{activity.title}</h1>
       {instructionsText ? (
         <div className="mt-4 rounded-lg bg-white p-4 shadow-sm text-slate-700">

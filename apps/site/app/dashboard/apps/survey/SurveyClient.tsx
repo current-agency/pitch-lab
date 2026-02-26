@@ -177,8 +177,8 @@ function SurveyClientContent() {
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-900">
           <p className="font-medium">Could not load survey</p>
           <p className="mt-1 text-sm">{error}</p>
-          <Link href="/dashboard" className="mt-4 inline-block text-sm text-amber-800 underline">
-            Back to dashboard
+          <Link href="/dashboard" className="mt-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+            ← Back to dashboard
           </Link>
         </div>
       </div>
@@ -189,7 +189,9 @@ function SurveyClientContent() {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
         <p className="text-slate-600">No questions available. Add questions in the CMS.</p>
-        <Link href="/dashboard" className="ml-4 text-slate-600 underline">Back to dashboard</Link>
+        <Link href="/dashboard" className="ml-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+          ← Back to dashboard
+        </Link>
       </div>
     )
   }
@@ -213,8 +215,8 @@ function SurveyClientContent() {
               </ol>
             </div>
           )}
-          <Link href="/dashboard" className="mt-6 inline-block text-slate-600 underline">
-            Back to dashboard
+          <Link href="/dashboard" className="mt-6 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+            ← Back to dashboard
           </Link>
         </div>
       </div>
@@ -225,6 +227,9 @@ function SurveyClientContent() {
     return (
       <div className="min-h-screen bg-slate-100 p-6">
         <div className="mx-auto max-w-2xl">
+          <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+            ← Back to dashboard
+          </Link>
           <h1 className="mb-4 text-2xl font-bold text-slate-900">Review your answers</h1>
           <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             {sections.map((sec) => (
@@ -261,6 +266,9 @@ function SurveyClientContent() {
   return (
     <div className="min-h-screen bg-slate-100 p-6">
       <div className="mx-auto max-w-2xl">
+        <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+          ← Back to dashboard
+        </Link>
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
           <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200">

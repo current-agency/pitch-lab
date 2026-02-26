@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@repo/ui'
 import type { ImageChoiceAssessment } from '@/components/apps/image-choice/types'
@@ -136,8 +137,13 @@ function ImageChoiceContent() {
 
   if (phase === 'loading') {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <p className="text-slate-600">Loading…</p>
+      <div className="mx-auto max-w-[67.76rem] space-y-4">
+        <Link href="/dashboard" className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+          ← Back to dashboard
+        </Link>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <p className="text-slate-600">Loading…</p>
+        </div>
       </div>
     )
   }
@@ -145,6 +151,9 @@ function ImageChoiceContent() {
   if (phase === 'error') {
     return (
       <div className="mx-auto max-w-[67.76rem]">
+        <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+          ← Back to dashboard
+        </Link>
         <h1 className="mb-6 text-2xl font-bold text-slate-900">This or That</h1>
         <p className="text-red-600">{error ?? 'Something went wrong.'}</p>
         <Button className="mt-4" onClick={() => { setPhase('loading'); loadList(); }}>Back</Button>
@@ -156,6 +165,9 @@ function ImageChoiceContent() {
     const docs = list?.docs ?? []
     return (
       <div className="mx-auto max-w-[67.76rem]">
+        <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+          ← Back to dashboard
+        </Link>
         <h1 className="mb-6 text-2xl font-bold text-slate-900">This or That</h1>
         {docs.length === 0 ? (
           <p className="text-slate-600">No active assessments. Create one in the CMS.</p>
@@ -183,6 +195,9 @@ function ImageChoiceContent() {
   if (phase === 'done' && assessment) {
     return (
       <div className="mx-auto max-w-[67.76rem]">
+        <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+          ← Back to dashboard
+        </Link>
         <h1 className="mb-6 text-2xl font-bold text-slate-900">{assessment.title}</h1>
         <p className="text-slate-700">Thank you. You completed all {assessment.imagePairs.length} pair(s).</p>
         {results.length > 0 && (
@@ -217,6 +232,9 @@ function ImageChoiceContent() {
 
     return (
       <div className="mx-auto max-w-[67.76rem]">
+        <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+          ← Back to dashboard
+        </Link>
         <h1 className="mb-2 text-2xl font-bold text-slate-900">{assessment.title}</h1>
         <div className="mb-6 flex items-center justify-between gap-4">
           <p className="text-slate-600">

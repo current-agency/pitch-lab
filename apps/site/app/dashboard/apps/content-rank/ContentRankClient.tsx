@@ -95,8 +95,8 @@ function ContentRankContent() {
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-900">
           <p className="font-medium">Could not load content rank</p>
           <p className="mt-1 text-sm">{error}</p>
-          <Link href="/dashboard" className="mt-4 inline-block text-sm text-amber-800 underline">
-            Back to dashboard
+          <Link href="/dashboard" className="mt-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+            ← Back to dashboard
           </Link>
         </div>
       </div>
@@ -107,7 +107,9 @@ function ContentRankContent() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
         <p className="text-slate-600">Missing instance. Open from the dashboard.</p>
-        <Link href="/dashboard" className="ml-4 text-slate-600 underline">Back to dashboard</Link>
+        <Link href="/dashboard" className="ml-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+          ← Back to dashboard
+        </Link>
       </div>
     )
   }
@@ -115,16 +117,16 @@ function ContentRankContent() {
   return (
     <div className="min-h-screen bg-slate-50 p-6">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">{instance?.title ?? 'Content rank'}</h1>
+            <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+              ← Back to dashboard
+            </Link>
+            <h1 className="mt-2 text-2xl font-bold text-slate-900">{instance?.title ?? 'Content rank'}</h1>
             <p className="mt-1 text-sm text-slate-600">
               Rank pages from ScreamingFrog + GA4: move, lost, reuse
             </p>
           </div>
-          <Link href="/dashboard" className="text-slate-600 hover:text-slate-900 underline">
-            Back to dashboard
-          </Link>
         </div>
 
         {loadingPages && pages.length === 0 ? (

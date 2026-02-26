@@ -1,3 +1,4 @@
+import path from 'path'
 import type { CollectionConfig } from 'payload'
 
 export const Media: CollectionConfig = {
@@ -13,8 +14,10 @@ export const Media: CollectionConfig = {
     delete: ({ req }) => Boolean(req.user),
   },
   upload: {
-    staticDir: 'media',
-    mimeTypes: ['image/*'],
+    // Absolute path so mkdir works regardless of cwd. In production (e.g. Vercel) use BLOB_READ_WRITE_TOKEN so the Vercel Blob plugin is used instead.
+    staticDir: path.join(process.cwd(), 'media'),
+    // image/* for Image Choice and general images; text/csv and application/csv for Content Rank (ScreamingFrog + GA4)
+    mimeTypes: ['image/*', 'text/csv', 'application/csv', 'text/plain'],
     imageSizes: [
       { name: 'thumbnail', width: 400, height: 300, position: 'centre' },
       { name: 'card', width: 768, height: 1024, position: 'centre' },

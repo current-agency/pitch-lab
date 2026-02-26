@@ -14,6 +14,7 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 
 const QUADRANTS = [
@@ -265,31 +266,46 @@ export function StakeholderMap({ activityId }: StakeholderMapProps) {
     }
   }, [activityId, placement, allPlaced])
 
+  const backLink = (
+    <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+      ← Back to dashboard
+    </Link>
+  )
+
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <p className="text-slate-600">Loading activity…</p>
+      <div className="space-y-4">
+        {backLink}
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <p className="text-slate-600">Loading activity…</p>
+        </div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
-        <p className="font-medium">Error</p>
-        <p className="mt-1 text-sm">{error}</p>
+      <div className="space-y-4">
+        {backLink}
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
+          <p className="font-medium">Error</p>
+          <p className="mt-1 text-sm">{error}</p>
+        </div>
       </div>
     )
   }
 
   if (stakeholders.length === 0) {
     return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
-        <p className="font-medium">No stakeholders in this activity</p>
-        <p className="mt-1 text-sm">
-          This activity has no stakeholders listed. In the CMS, open the Stakeholder Map activity and add
-          stakeholders in the &quot;Stakeholders&quot; array.
-        </p>
+      <div className="space-y-4">
+        {backLink}
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
+          <p className="font-medium">No stakeholders in this activity</p>
+          <p className="mt-1 text-sm">
+            This activity has no stakeholders listed. In the CMS, open the Stakeholder Map activity and add
+            stakeholders in the &quot;Stakeholders&quot; array.
+          </p>
+        </div>
       </div>
     )
   }
@@ -297,6 +313,7 @@ export function StakeholderMap({ activityId }: StakeholderMapProps) {
   if (submitted) {
     return (
       <div className="space-y-6">
+        {backLink}
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
           <p className="font-semibold">Map submitted</p>
           <p className="mt-1 text-sm">Your stakeholder map has been saved.</p>
@@ -326,14 +343,16 @@ export function StakeholderMap({ activityId }: StakeholderMapProps) {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex h-[calc(100vh-8rem)] gap-6">
-        <div
-          className="flex w-56 shrink-0 flex-col overflow-hidden rounded-xl border-2 border-slate-200 bg-slate-50/80"
-          aria-label="Unplaced stakeholders"
-        >
-          <p className="border-b border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
-            Stakeholders
-          </p>
+      <div className="space-y-4">
+        {backLink}
+        <div className="flex h-[calc(100vh-8rem)] gap-6">
+          <div
+            className="flex w-56 shrink-0 flex-col overflow-hidden rounded-xl border-2 border-slate-200 bg-slate-50/80"
+            aria-label="Unplaced stakeholders"
+          >
+            <p className="border-b border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+              Stakeholders
+            </p>
           <DroppableSidebar>
             <SortableContext items={unplacedIds} strategy={verticalListSortingStrategy}>
               <div className="flex flex-col gap-2">
@@ -380,6 +399,7 @@ export function StakeholderMap({ activityId }: StakeholderMapProps) {
             </button>
           </div>
           {submitError ? <p className="text-sm text-red-600">{submitError}</p> : null}
+        </div>
         </div>
       </div>
 

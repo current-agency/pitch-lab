@@ -4,6 +4,7 @@ import sharp from 'sharp'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
 import { buildConfig } from 'payload'
+import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 import { Companies } from './collections/Companies'
 import { ContentRank } from './collections/ContentRank'
 import { ImageChoiceAssessments } from './collections/ImageChoiceAssessments'
@@ -319,6 +320,15 @@ export default buildConfig({
     suppressHydrationWarning: true,
   },
   collections: [Companies, Users, Media, ImageChoiceAssessments, ImageChoiceResponses, AudiencePokerActivities, AudiencePokerSubmissions, ContentRank, MigrationReviewSession, PlatformSurveyQuestions, PlatformSurveyResponses, Faqs, StakeholderMapActivities, StakeholderMapSubmissions],
+  plugins: [
+    // Use Vercel Blob in production so uploads work (serverless filesystem is read-only). Set BLOB_READ_WRITE_TOKEN in Vercel.
+    vercelBlobStorage({
+      enabled: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
+      collections: { media: true },
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+      clientUploads: true, // Bypass Vercel 4.5MB server upload limit
+    }),
+  ],
   editor: lexicalEditor(),
   secret: payloadSecret || 'change-me-in-production',
   typescript: {
