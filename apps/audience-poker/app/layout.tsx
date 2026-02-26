@@ -4,8 +4,8 @@ import { BugReportFab } from '../components/bug-report-fab'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Survey',
-  description: 'Complete questions and see tabulated results',
+  title: 'Audience Poker',
+  description: 'Allocate your chips across audiences',
 }
 
 const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL ?? ''

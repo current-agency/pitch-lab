@@ -24,28 +24,56 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await params
+  let id: string
+  try {
+    const p = await params
+    id = p.id
+  } catch (err) {
+    console.error('[image-choice /api/assessment/[id]] params error:', err)
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
   if (!id) return NextResponse.json({ error: 'Missing assessment id' }, { status: 400 })
 
   try {
-    const res = await fetch(
-      `${CMS_URL}/api/image-choice-assessments/${id}?depth=2`,
-      { next: { revalidate: 0 } },
-    )
+    const url = `${CMS_URL}/api/image-choice-assessments/${id}?depth=2`
+    const res = await fetch(url, { next: { revalidate: 0 } })
+    const text = await res.text()
+
     if (!res.ok) {
-      const text = await res.text()
+      console.error('[image-choice /api/assessment/[id]] CMS error:', res.status, url, text.slice(0, 300))
+      if (res.status === 404) {
+        return NextResponse.json({ error: 'Assessment not found' }, { status: 404 })
+      }
+      const message =
+        res.status === 500
+          ? 'CMS returned an error. Check that the CMS is running (e.g. port 3001) and the database is available.'
+          : text || res.statusText
+      return NextResponse.json({ error: message }, { status: 502 })
+    }
+
+    let data: unknown
+    try {
+      data = text ? JSON.parse(text) : null
+    } catch {
+      console.error('[image-choice /api/assessment/[id]] CMS returned non-JSON:', text.slice(0, 200))
       return NextResponse.json(
-        { error: res.status === 404 ? 'Assessment not found' : text || res.statusText },
-        { status: res.status },
+        { error: 'Invalid response from CMS' },
+        { status: 502 },
       )
     }
-    const data = await res.json()
+
     const rewritten = rewriteMediaUrls(data, CMS_URL) as typeof data
     return NextResponse.json(rewritten)
   } catch (err) {
-    console.error('Assessment fetch error:', err)
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('[image-choice /api/assessment/[id]]', message, err)
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Failed to load assessment' },
+      {
+        error:
+          message.includes('fetch') || message.includes('ECONNREFUSED')
+            ? 'Cannot reach CMS. Start the CMS app (e.g. pnpm --filter cms dev on port 3001) and ensure CMS_URL is correct.'
+            : `Failed to load assessment: ${message}`,
+      },
       { status: 502 },
     )
   }

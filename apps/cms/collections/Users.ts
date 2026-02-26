@@ -80,10 +80,10 @@ export const Users: CollectionConfig = {
     {
       name: 'assignedApplications',
       type: 'relationship',
-      relationTo: 'image-choice-assessments',
+      relationTo: ['image-choice-assessments', 'audience-poker-activities'],
       hasMany: true,
       admin: {
-        description: 'Image choice assessments (and other apps) this user can access. Only admins can edit.',
+        description: 'Image choice assessments and Audience Poker activities this user can access. Only admins can edit.',
       },
       access: {
         read: ({ req, doc }) => {

@@ -4,6 +4,8 @@ import { ActivityCard } from '@/components/activity-card'
 import { ApplicationShell5 } from '@/components/application-shell5'
 import { type CardData } from '@/components/feature222'
 import { requireAuth } from '@/lib/auth'
+import { createAudiencePokerToken } from '@/lib/audience-poker-token'
+import { createImageChoiceToken } from '@/lib/image-choice-token'
 
 const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
 const IMAGE_CHOICE_URL =
@@ -12,6 +14,8 @@ const CONTENT_RANK_URL =
   process.env.NEXT_PUBLIC_CONTENT_RANK_URL || 'http://localhost:3003'
 const SURVEY_URL =
   process.env.NEXT_PUBLIC_SURVEY_URL || 'http://localhost:3005'
+const AUDIENCE_POKER_URL =
+  process.env.NEXT_PUBLIC_AUDIENCE_POKER_URL || 'http://localhost:3007'
 const DEFAULT_CARD_BACKGROUND =
   'https://deifkwefumgah.cloudfront.net/shadcnblocks/block/photos/simone-hutsch-5oYbG-sEImY-unsplash.jpg'
 const CONTENT_RANK_BACKGROUND =
@@ -25,20 +29,34 @@ type AssignedAssessment = {
   description?: string | null
 }
 
+type AssignedAudiencePokerActivity = {
+  id: string
+  title?: string | null
+}
+
+/** Polymorphic assignedApplications: array of { relationTo, value } from Payload */
+type PolymorphicAssignment =
+  | { relationTo: 'image-choice-assessments'; value: string | AssignedAssessment }
+  | { relationTo: 'audience-poker-activities'; value: string | AssignedAudiencePokerActivity }
+
 type ContentRankInstance = {
   id: string
   title?: string | null
   accessToken?: string | null
 }
 
-function toImageChoiceCard(assessment: AssignedAssessment): CardData {
+function toImageChoiceCard(assessment: AssignedAssessment, userId?: string | null): CardData {
   const id = typeof assessment === 'string' ? assessment : assessment.id
   const title = typeof assessment === 'string' ? 'Assessment' : (assessment.title || 'Image choice')
   const description =
     typeof assessment === 'string' ? '' : (assessment.description || 'Time-based selection between two images')
+  const token = userId ? createImageChoiceToken(userId) : null
+  const link = token
+    ? `${IMAGE_CHOICE_URL}?assessment=${id}&token=${encodeURIComponent(token)}`
+    : `${IMAGE_CHOICE_URL}?assessment=${id}`
   return {
     title,
-    link: `${IMAGE_CHOICE_URL}?assessment=${id}`,
+    link,
     background: DEFAULT_CARD_BACKGROUND,
     stats: [{ number: 'A/B', text: description || 'Time-based selection between two images' }],
   }
@@ -66,6 +84,24 @@ function toSurveyCard(companyId: string): CardData {
   }
 }
 
+function toAudiencePokerCard(
+  activity: AssignedAudiencePokerActivity,
+  userId?: string | null,
+): CardData {
+  const id = typeof activity === 'string' ? activity : activity.id
+  const title = typeof activity === 'string' ? 'Audience Poker' : (activity.title || 'Audience Poker')
+  const token = userId ? createAudiencePokerToken(userId) : null
+  const link = token
+    ? `${AUDIENCE_POKER_URL}/activity/${id}?token=${encodeURIComponent(token)}`
+    : `${AUDIENCE_POKER_URL}/activity/${id}`
+  return {
+    title,
+    link,
+    background: DEFAULT_CARD_BACKGROUND,
+    stats: [{ number: 'Poker', text: 'Allocate chips across audiences (unique values, no ties)' }],
+  }
+}
+
 export default async function DashboardPage() {
   const cookieStore = await cookies()
   const { token } = requireAuth(cookieStore)
@@ -87,10 +123,11 @@ export default async function DashboardPage() {
   }
 
   const user = data.user as {
+    id?: string | null
     firstName?: string | null
     lastName?: string | null
     email?: string | null
-    assignedApplications?: (string | AssignedAssessment)[] | null
+    assignedApplications?: PolymorphicAssignment[] | (string | AssignedAssessment)[] | null
     company?: string | { id: string; name?: string | null; platformSurveyEnabled?: boolean } | null
   }
   const assigned = user?.assignedApplications ?? []
@@ -100,9 +137,22 @@ export default async function DashboardPage() {
   const contentRankData = await contentRankRes.json().catch(() => ({ docs: [] }))
   const contentRanks = (contentRankData.docs ?? []) as ContentRankInstance[]
 
-  const imageChoiceCards = assigned
-    .filter((a): a is AssignedAssessment => !!a)
-    .map(toImageChoiceCard)
+  const applicationCards: CardData[] = assigned
+    .filter((a): a is PolymorphicAssignment | string | AssignedAssessment | AssignedAudiencePokerActivity => !!a)
+    .flatMap((a) => {
+      const polymorphic = a as PolymorphicAssignment
+      if (typeof polymorphic === 'object' && 'relationTo' in polymorphic && polymorphic.value != null) {
+        if (polymorphic.relationTo === 'image-choice-assessments') {
+          return [toImageChoiceCard(polymorphic.value as AssignedAssessment, user?.id)]
+        }
+        if (polymorphic.relationTo === 'audience-poker-activities') {
+          return [toAudiencePokerCard(polymorphic.value as AssignedAudiencePokerActivity, user?.id)]
+        }
+      }
+      // Legacy: plain ID or populated image-choice doc (no relationTo)
+      const legacy = a as string | AssignedAssessment
+      return [toImageChoiceCard(legacy, user?.id)]
+    })
   const contentRankCards = contentRanks.map(toContentRankCard)
 
   const userCompany = user?.company
@@ -111,7 +161,7 @@ export default async function DashboardPage() {
   const surveyCard = companyId && surveyEnabled ? toSurveyCard(companyId) : null
 
   const cards: CardData[] = [
-    ...imageChoiceCards,
+    ...applicationCards,
     ...contentRankCards,
     ...(surveyCard ? [surveyCard] : []),
   ]

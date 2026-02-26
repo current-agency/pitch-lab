@@ -27,6 +27,15 @@ export const ImageChoiceAssessments: CollectionConfig = {
       admin: { description: 'Optional description of the assessment' },
     },
     {
+      name: 'duration',
+      type: 'number',
+      required: true,
+      defaultValue: 5,
+      min: 1,
+      max: 60,
+      admin: { description: 'Time in seconds for each image pair' },
+    },
+    {
       name: 'imagePairs',
       type: 'array',
       required: true,
@@ -58,15 +67,6 @@ export const ImageChoiceAssessments: CollectionConfig = {
           admin: { description: 'Optional question to display with this pair' },
         },
       ],
-    },
-    {
-      name: 'duration',
-      type: 'number',
-      required: true,
-      defaultValue: 5,
-      min: 1,
-      max: 60,
-      admin: { description: 'Time in seconds for each image pair' },
     },
     {
       name: 'isActive',

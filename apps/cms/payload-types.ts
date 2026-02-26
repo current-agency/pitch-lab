@@ -71,6 +71,9 @@ export interface Config {
     users: User;
     media: Media;
     'image-choice-assessments': ImageChoiceAssessment;
+    'image-choice-responses': ImageChoiceResponse;
+    'audience-poker-activities': AudiencePokerActivity;
+    'audience-poker-submissions': AudiencePokerSubmission;
     'content-rank': ContentRank;
     'questions-bank': QuestionsBank;
     'migration-review-sessions': MigrationReviewSession;
@@ -87,6 +90,9 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'image-choice-assessments': ImageChoiceAssessmentsSelect<false> | ImageChoiceAssessmentsSelect<true>;
+    'image-choice-responses': ImageChoiceResponsesSelect<false> | ImageChoiceResponsesSelect<true>;
+    'audience-poker-activities': AudiencePokerActivitiesSelect<false> | AudiencePokerActivitiesSelect<true>;
+    'audience-poker-submissions': AudiencePokerSubmissionsSelect<false> | AudiencePokerSubmissionsSelect<true>;
     'content-rank': ContentRankSelect<false> | ContentRankSelect<true>;
     'questions-bank': QuestionsBankSelect<false> | QuestionsBankSelect<true>;
     'migration-review-sessions': MigrationReviewSessionsSelect<false> | MigrationReviewSessionsSelect<true>;
@@ -172,9 +178,20 @@ export interface User {
    */
   company: string | Company;
   /**
-   * Image choice assessments (and other apps) this user can access. Only admins can edit.
+   * Image choice assessments and Audience Poker activities this user can access. Only admins can edit.
    */
-  assignedApplications?: (string | ImageChoiceAssessment)[] | null;
+  assignedApplications?:
+    | (
+        | {
+            relationTo: 'image-choice-assessments';
+            value: string | ImageChoiceAssessment;
+          }
+        | {
+            relationTo: 'audience-poker-activities';
+            value: string | AudiencePokerActivity;
+          }
+      )[]
+    | null;
   /**
    * Whether this user account is active
    */
@@ -217,6 +234,10 @@ export interface ImageChoiceAssessment {
    */
   description?: string | null;
   /**
+   * Time in seconds for each image pair
+   */
+  duration: number;
+  /**
    * Pairs of images for users to choose between
    */
   imagePairs: {
@@ -238,10 +259,6 @@ export interface ImageChoiceAssessment {
     question?: string | null;
     id?: string | null;
   }[];
-  /**
-   * Time in seconds for each image pair
-   */
-  duration: number;
   /**
    * Whether this assessment is currently active
    */
@@ -306,6 +323,127 @@ export interface Media {
       filename?: string | null;
     };
   };
+}
+/**
+ * Audience Poker activities: users allocate a chip budget across audiences (unique allocations, no ties).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audience-poker-activities".
+ */
+export interface AudiencePokerActivity {
+  id: string;
+  /**
+   * Activity title shown to the user
+   */
+  title: string;
+  /**
+   * Instructions shown above the chip allocation UI
+   */
+  instructions?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Total chips the user must allocate across all audiences. Minimum for N audiences is N(N+1)/2 (e.g. 3 audiences = 6, 5 = 15).
+   */
+  chipBudget: number;
+  /**
+   * Audiences the user must allocate chips to (each gets ≥1, all values unique)
+   */
+  audiences: {
+    /**
+     * Audience label
+     */
+    label: string;
+    /**
+     * Optional description
+     */
+    description?: string | null;
+    id?: string | null;
+  }[];
+  /**
+   * Whether this activity is available
+   */
+  isActive?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Image choice assessment submissions (pair choices and response times)
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "image-choice-responses".
+ */
+export interface ImageChoiceResponse {
+  id: string;
+  /**
+   * User who completed the assessment (when opened from dashboard with token)
+   */
+  user?: (string | null) | User;
+  /**
+   * Assessment that was completed
+   */
+  assessment: string | ImageChoiceAssessment;
+  /**
+   * Array of { pairIndex, side: "left"|"right", elapsedMs } per pair
+   */
+  responses:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * When the assessment was completed
+   */
+  completedAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Audience Poker submissions (chip allocations per activity).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audience-poker-submissions".
+ */
+export interface AudiencePokerSubmission {
+  id: string;
+  /**
+   * Activity that was submitted
+   */
+  activity: string | AudiencePokerActivity;
+  /**
+   * User who submitted
+   */
+  user: string | User;
+  /**
+   * Chips allocated per audience (audienceLabel denormalized for reporting)
+   */
+  allocations: {
+    audienceLabel: string;
+    chips: number;
+    id?: string | null;
+  }[];
+  /**
+   * When the submission was made
+   */
+  submittedAt: string;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -577,6 +715,18 @@ export interface PayloadLockedDocument {
         value: string | ImageChoiceAssessment;
       } | null)
     | ({
+        relationTo: 'image-choice-responses';
+        value: string | ImageChoiceResponse;
+      } | null)
+    | ({
+        relationTo: 'audience-poker-activities';
+        value: string | AudiencePokerActivity;
+      } | null)
+    | ({
+        relationTo: 'audience-poker-submissions';
+        value: string | AudiencePokerSubmission;
+      } | null)
+    | ({
         relationTo: 'content-rank';
         value: string | ContentRank;
       } | null)
@@ -727,6 +877,7 @@ export interface MediaSelect<T extends boolean = true> {
 export interface ImageChoiceAssessmentsSelect<T extends boolean = true> {
   title?: T;
   description?: T;
+  duration?: T;
   imagePairs?:
     | T
     | {
@@ -736,9 +887,57 @@ export interface ImageChoiceAssessmentsSelect<T extends boolean = true> {
         question?: T;
         id?: T;
       };
-  duration?: T;
   isActive?: T;
   instructions?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "image-choice-responses_select".
+ */
+export interface ImageChoiceResponsesSelect<T extends boolean = true> {
+  user?: T;
+  assessment?: T;
+  responses?: T;
+  completedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audience-poker-activities_select".
+ */
+export interface AudiencePokerActivitiesSelect<T extends boolean = true> {
+  title?: T;
+  instructions?: T;
+  chipBudget?: T;
+  audiences?:
+    | T
+    | {
+        label?: T;
+        description?: T;
+        id?: T;
+      };
+  isActive?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audience-poker-submissions_select".
+ */
+export interface AudiencePokerSubmissionsSelect<T extends boolean = true> {
+  activity?: T;
+  user?: T;
+  allocations?:
+    | T
+    | {
+        audienceLabel?: T;
+        chips?: T;
+        id?: T;
+      };
+  submittedAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

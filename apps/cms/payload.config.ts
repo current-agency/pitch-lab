@@ -8,6 +8,9 @@ import { Companies } from './collections/Companies'
 import { ContentRank } from './collections/ContentRank'
 import { QuestionsBank } from './collections/QuestionsBank'
 import { ImageChoiceAssessments } from './collections/ImageChoiceAssessments'
+import { ImageChoiceResponses } from './collections/ImageChoiceResponses'
+import { AudiencePokerActivities } from './collections/AudiencePokerActivities'
+import { AudiencePokerSubmissions } from './collections/AudiencePokerSubmissions'
 import { Media } from './collections/Media'
 import { MigrationReviewSession, generateSessionId } from './collections/MigrationReviewSession'
 import { PlatformSurveyQuestions } from './collections/PlatformSurveyQuestions'
@@ -310,8 +313,10 @@ export default buildConfig({
     meta: {
       titleSuffix: ' | Site CMS',
     },
+    // Avoid hydration warnings when browser extensions (e.g. cz-shortcut-listen) modify <body>
+    suppressHydrationWarning: true,
   },
-  collections: [Companies, Users, Media, ImageChoiceAssessments, ContentRank, QuestionsBank, MigrationReviewSession, PlatformSurveyQuestions, PlatformSurveyResponses],
+  collections: [Companies, Users, Media, ImageChoiceAssessments, ImageChoiceResponses, AudiencePokerActivities, AudiencePokerSubmissions, ContentRank, QuestionsBank, MigrationReviewSession, PlatformSurveyQuestions, PlatformSurveyResponses],
   editor: lexicalEditor(),
   secret: payloadSecret || 'change-me-in-production',
   typescript: {
