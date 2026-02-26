@@ -1,7 +1,4 @@
-export {
-  createActivityLinkToken,
-  verifyActivityLinkToken,
-} from './activity-link-token'
+export { verifyActivityLinkToken } from './activity-link-token'
 
 /**
  * Returns the CMS base URL with no trailing slash.

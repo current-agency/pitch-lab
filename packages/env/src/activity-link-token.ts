@@ -1,44 +1,19 @@
 import { createHmac } from 'crypto'
 
-const DEFAULT_EXPIRY_MS = 60 * 60 * 1000 // 1 hour
-
-function base64UrlEncode(value: string): string {
-  return Buffer.from(value, 'utf8').toString('base64url')
-}
-
 function base64UrlDecode(value: string): string {
   return Buffer.from(value, 'base64url').toString('utf8')
 }
 
 /**
- * Single shared secret for all activity links (image-choice, audience-poker, stakeholder-map).
- * Set ACTIVITY_LINK_SECRET to the same value in the site and in each activity app.
+ * Shared secret for activity link tokens. Set ACTIVITY_LINK_SECRET in the site, CMS,
+ * and any standalone activity app that verifies link tokens.
  */
 const getSecret = (): string | undefined => process.env.ACTIVITY_LINK_SECRET
 
 /**
- * Creates a short-lived token encoding the user id for activity app links.
- * Use this when building dashboard links; each app verifies with verifyActivityLinkToken.
- */
-export function createActivityLinkToken(
-  userId: string,
-  options?: { expiresInMs?: number },
-): string | null {
-  const secret = getSecret()
-  if (!secret) return null
-  const expiresInMs = options?.expiresInMs ?? DEFAULT_EXPIRY_MS
-  const payload = JSON.stringify({
-    userId,
-    exp: Date.now() + expiresInMs,
-  })
-  const payloadB64 = base64UrlEncode(payload)
-  const sig = createHmac('sha256', secret).update(payloadB64).digest('base64url')
-  return `${payloadB64}.${sig}`
-}
-
-/**
  * Verifies the token and returns the userId, or null if invalid/expired.
- * Use in activity app API routes (image-choice, audience-poker, stakeholder-map).
+ * Used by standalone activity apps (image-choice, audience-poker, stakeholder-map)
+ * when opened via a link that includes the token.
  */
 export function verifyActivityLinkToken(token: string): string | null {
   const secret = getSecret()
