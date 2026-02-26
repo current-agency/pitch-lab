@@ -9,22 +9,23 @@ import { createImageChoiceToken } from '@/lib/image-choice-token'
 import { createStakeholderMapToken } from '@/lib/stakeholder-map-token'
 
 const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
-const STAKEHOLDER_MAP_URL =
-  process.env.NEXT_PUBLIC_STAKEHOLDER_MAP_URL || 'http://localhost:3008'
-const IMAGE_CHOICE_URL =
-  process.env.NEXT_PUBLIC_IMAGE_CHOICE_URL || 'http://localhost:3002'
-const CONTENT_RANK_URL =
-  process.env.NEXT_PUBLIC_CONTENT_RANK_URL || 'http://localhost:3003'
-const SURVEY_URL =
-  process.env.NEXT_PUBLIC_SURVEY_URL || 'http://localhost:3005'
-const AUDIENCE_POKER_URL =
-  process.env.NEXT_PUBLIC_AUDIENCE_POKER_URL || 'http://localhost:3007'
 const DEFAULT_CARD_BACKGROUND =
   'https://deifkwefumgah.cloudfront.net/shadcnblocks/block/photos/simone-hutsch-5oYbG-sEImY-unsplash.jpg'
 const CONTENT_RANK_BACKGROUND =
   'https://deifkwefumgah.cloudfront.net/shadcnblocks/block/photos/simone-hutsch-o9F8dRoSucM-unsplash.jpg'
 const SURVEY_BACKGROUND =
   'https://deifkwefumgah.cloudfront.net/shadcnblocks/block/photos/simone-hutsch-5oYbG-sEImY-unsplash.jpg'
+
+/** Read at runtime so Vercel production env vars are used (not build-time inlined). */
+function getAppUrls() {
+  return {
+    imageChoice: process.env.NEXT_PUBLIC_IMAGE_CHOICE_URL || 'http://localhost:3002',
+    contentRank: process.env.NEXT_PUBLIC_CONTENT_RANK_URL || 'http://localhost:3003',
+    survey: process.env.NEXT_PUBLIC_SURVEY_URL || 'http://localhost:3005',
+    audiencePoker: process.env.NEXT_PUBLIC_AUDIENCE_POKER_URL || 'http://localhost:3007',
+    stakeholderMap: process.env.NEXT_PUBLIC_STAKEHOLDER_MAP_URL || 'http://localhost:3008',
+  }
+}
 
 type AssignedAssessment = {
   id: string
@@ -37,10 +38,17 @@ type AssignedAudiencePokerActivity = {
   title?: string | null
 }
 
+type AssignedStakeholderMapActivity = {
+  id: string
+  title?: string | null
+  company?: string | { id: string } | null
+}
+
 /** Polymorphic assignedApplications: array of { relationTo, value } from Payload */
 type PolymorphicAssignment =
   | { relationTo: 'image-choice-assessments'; value: string | AssignedAssessment }
   | { relationTo: 'audience-poker-activities'; value: string | AssignedAudiencePokerActivity }
+  | { relationTo: 'stakeholder-map-activities'; value: string | AssignedStakeholderMapActivity }
 
 type ContentRankInstance = {
   id: string
@@ -48,15 +56,19 @@ type ContentRankInstance = {
   accessToken?: string | null
 }
 
-function toImageChoiceCard(assessment: string | AssignedAssessment, userId?: string | null): CardData {
+function toImageChoiceCard(
+  assessment: string | AssignedAssessment,
+  userId: string | null | undefined,
+  baseUrl: string,
+): CardData {
   const id = typeof assessment === 'string' ? assessment : assessment.id
   const title = typeof assessment === 'string' ? 'Assessment' : (assessment.title || 'Image choice')
   const description =
     typeof assessment === 'string' ? '' : (assessment.description || 'Time-based selection between two images')
   const token = userId ? createImageChoiceToken(userId) : null
   const link = token
-    ? `${IMAGE_CHOICE_URL}?assessment=${id}&token=${encodeURIComponent(token)}`
-    : `${IMAGE_CHOICE_URL}?assessment=${id}`
+    ? `${baseUrl}?assessment=${id}&token=${encodeURIComponent(token)}`
+    : `${baseUrl}?assessment=${id}`
   return {
     title,
     link,
@@ -65,11 +77,11 @@ function toImageChoiceCard(assessment: string | AssignedAssessment, userId?: str
   }
 }
 
-function toContentRankCard(instance: ContentRankInstance): CardData {
+function toContentRankCard(instance: ContentRankInstance, baseUrl: string): CardData {
   const id = typeof instance === 'string' ? instance : instance.id
   const title = typeof instance === 'string' ? 'Content rank' : (instance.title || 'Content rank')
   const token = typeof instance === 'object' && instance.accessToken ? instance.accessToken : ''
-  const link = token ? `${CONTENT_RANK_URL}?id=${id}&token=${encodeURIComponent(token)}` : `${CONTENT_RANK_URL}?id=${id}`
+  const link = token ? `${baseUrl}?id=${id}&token=${encodeURIComponent(token)}` : `${baseUrl}?id=${id}`
   return {
     title,
     link,
@@ -78,22 +90,42 @@ function toContentRankCard(instance: ContentRankInstance): CardData {
   }
 }
 
-function toSurveyCard(companyId: string): CardData {
+function toSurveyCard(companyId: string, baseUrl: string): CardData {
   return {
     title: 'Platform Fit Quiz',
-    link: `${SURVEY_URL}?company=${encodeURIComponent(companyId)}`,
+    link: `${baseUrl}?company=${encodeURIComponent(companyId)}`,
     background: SURVEY_BACKGROUND,
     stats: [{ number: 'Survey', text: 'Platform Fit Quiz: answer questions to get a platform recommendation' }],
   }
 }
 
-function toStakeholderMapCard(companyId: string, userId: string | null): CardData {
+function toStakeholderMapCard(
+  activity: string | AssignedStakeholderMapActivity,
+  userId: string | null | undefined,
+  baseUrl: string,
+): CardData {
+  const id = typeof activity === 'string' ? activity : activity.id
+  const title = typeof activity === 'string' ? 'Stakeholder Map' : (activity.title || 'Stakeholder Map')
+  const companyId =
+    typeof activity === 'object' && activity.company
+      ? typeof activity.company === 'string'
+        ? activity.company
+        : activity.company.id
+      : null
+  if (!companyId) {
+    return {
+      title,
+      link: baseUrl,
+      background: DEFAULT_CARD_BACKGROUND,
+      stats: [{ number: 'Map', text: 'Map stakeholders by influence and interest' }],
+    }
+  }
   const token = userId ? createStakeholderMapToken(userId) : null
   const link = token
-    ? `${STAKEHOLDER_MAP_URL}?company=${encodeURIComponent(companyId)}&token=${encodeURIComponent(token)}`
-    : `${STAKEHOLDER_MAP_URL}?company=${encodeURIComponent(companyId)}`
+    ? `${baseUrl}?company=${encodeURIComponent(companyId)}&token=${encodeURIComponent(token)}`
+    : `${baseUrl}?company=${encodeURIComponent(companyId)}`
   return {
-    title: 'Stakeholder Map',
+    title,
     link,
     background: DEFAULT_CARD_BACKGROUND,
     stats: [{ number: 'Map', text: 'Map stakeholders by influence and interest' }],
@@ -102,14 +134,15 @@ function toStakeholderMapCard(companyId: string, userId: string | null): CardDat
 
 function toAudiencePokerCard(
   activity: AssignedAudiencePokerActivity,
-  userId?: string | null,
+  userId: string | null | undefined,
+  baseUrl: string,
 ): CardData {
   const id = typeof activity === 'string' ? activity : activity.id
   const title = typeof activity === 'string' ? 'Audience Poker' : (activity.title || 'Audience Poker')
   const token = userId ? createAudiencePokerToken(userId) : null
   const link = token
-    ? `${AUDIENCE_POKER_URL}/activity/${id}?token=${encodeURIComponent(token)}`
-    : `${AUDIENCE_POKER_URL}/activity/${id}`
+    ? `${baseUrl}/activity/${id}?token=${encodeURIComponent(token)}`
+    : `${baseUrl}/activity/${id}`
   return {
     title,
     link,
@@ -123,7 +156,7 @@ export default async function DashboardPage() {
   const { token } = requireAuth(cookieStore)
 
   const [userRes, contentRankRes] = await Promise.all([
-    fetch(`${CMS_URL}/api/users/me?depth=1`, {
+    fetch(`${CMS_URL}/api/users/me?depth=2`, {
       headers: { Authorization: `JWT ${token}` },
       next: { revalidate: 0 },
     }),
@@ -153,38 +186,46 @@ export default async function DashboardPage() {
   const contentRankData = await contentRankRes.json().catch(() => ({ docs: [] }))
   const contentRanks = (contentRankData.docs ?? []) as ContentRankInstance[]
 
+  const urls = getAppUrls()
+
   const applicationCards: CardData[] = assigned
-    .filter((a): a is PolymorphicAssignment | string | AssignedAssessment | AssignedAudiencePokerActivity => !!a)
+    .filter((a): a is PolymorphicAssignment | string | AssignedAssessment | AssignedAudiencePokerActivity | AssignedStakeholderMapActivity => !!a)
     .flatMap((a) => {
       const polymorphic = a as PolymorphicAssignment
       if (typeof polymorphic === 'object' && 'relationTo' in polymorphic && polymorphic.value != null) {
         if (polymorphic.relationTo === 'image-choice-assessments') {
-          return [toImageChoiceCard(polymorphic.value as AssignedAssessment, user?.id)]
+          return [toImageChoiceCard(polymorphic.value as AssignedAssessment, user?.id, urls.imageChoice)]
         }
         if (polymorphic.relationTo === 'audience-poker-activities') {
-          return [toAudiencePokerCard(polymorphic.value as AssignedAudiencePokerActivity, user?.id)]
+          return [toAudiencePokerCard(polymorphic.value as AssignedAudiencePokerActivity, user?.id, urls.audiencePoker)]
+        }
+        if (polymorphic.relationTo === 'stakeholder-map-activities') {
+          const act = polymorphic.value as AssignedStakeholderMapActivity
+          const companyId =
+            typeof act === 'object' && act?.company
+              ? typeof act.company === 'string'
+                ? act.company
+                : act.company?.id
+              : null
+          if (!companyId) return []
+          return [toStakeholderMapCard(act, user?.id, urls.stakeholderMap)]
         }
       }
       // Legacy: plain ID or populated image-choice doc (no relationTo)
       const legacy = a as string | AssignedAssessment
-      return [toImageChoiceCard(legacy, user?.id)]
+      return [toImageChoiceCard(legacy, user?.id, urls.imageChoice)]
     })
-  const contentRankCards = contentRanks.map(toContentRankCard)
+  const contentRankCards = contentRanks.map((c) => toContentRankCard(c, urls.contentRank))
 
   const userCompany = user?.company
   const companyId = typeof userCompany === 'object' && userCompany?.id ? userCompany.id : typeof userCompany === 'string' ? userCompany : null
   const surveyEnabled = typeof userCompany === 'object' && userCompany?.platformSurveyEnabled === true
-  const surveyCard = companyId && surveyEnabled ? toSurveyCard(companyId) : null
-  const stakeholderMapCard =
-    companyId && user?.id && createStakeholderMapToken(user.id)
-      ? toStakeholderMapCard(companyId, user.id)
-      : null
+  const surveyCard = companyId && surveyEnabled ? toSurveyCard(companyId, urls.survey) : null
 
   const cards: CardData[] = [
     ...applicationCards,
     ...contentRankCards,
     ...(surveyCard ? [surveyCard] : []),
-    ...(stakeholderMapCard ? [stakeholderMapCard] : []),
   ]
 
   return (

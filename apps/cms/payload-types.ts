@@ -80,6 +80,7 @@ export interface Config {
     'platform-survey-responses': PlatformSurveyResponse;
     faqs: Faq;
     stakeholders: Stakeholder;
+    'stakeholder-map-activities': StakeholderMapActivity;
     'stakeholder-map-submissions': StakeholderMapSubmission;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -101,6 +102,7 @@ export interface Config {
     'platform-survey-responses': PlatformSurveyResponsesSelect<false> | PlatformSurveyResponsesSelect<true>;
     faqs: FaqsSelect<false> | FaqsSelect<true>;
     stakeholders: StakeholdersSelect<false> | StakeholdersSelect<true>;
+    'stakeholder-map-activities': StakeholderMapActivitiesSelect<false> | StakeholderMapActivitiesSelect<true>;
     'stakeholder-map-submissions': StakeholderMapSubmissionsSelect<false> | StakeholderMapSubmissionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -182,7 +184,7 @@ export interface User {
    */
   company: string | Company;
   /**
-   * Image choice assessments and Audience Poker activities this user can access. Only admins can edit.
+   * Image choice, Audience Poker, and Stakeholder Map activities this user can access. Only admins can edit.
    */
   assignedApplications?:
     | (
@@ -193,6 +195,10 @@ export interface User {
         | {
             relationTo: 'audience-poker-activities';
             value: string | AudiencePokerActivity;
+          }
+        | {
+            relationTo: 'stakeholder-map-activities';
+            value: string | StakeholderMapActivity;
           }
       )[]
     | null;
@@ -378,6 +384,29 @@ export interface AudiencePokerActivity {
   }[];
   /**
    * Whether this activity is available
+   */
+  isActive?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Stakeholder Map activities: assign to users so they can map stakeholders by influence and interest for a specific company.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stakeholder-map-activities".
+ */
+export interface StakeholderMapActivity {
+  id: string;
+  /**
+   * Title shown on the dashboard card (e.g. "Stakeholder Map – Acme Corp")
+   */
+  title: string;
+  /**
+   * Company whose stakeholders the user will map
+   */
+  company: string | Company;
+  /**
+   * Inactive activities are hidden from assignment lists
    */
   isActive?: boolean | null;
   updatedAt: string;
@@ -827,6 +856,10 @@ export interface PayloadLockedDocument {
         value: string | Stakeholder;
       } | null)
     | ({
+        relationTo: 'stakeholder-map-activities';
+        value: string | StakeholderMapActivity;
+      } | null)
+    | ({
         relationTo: 'stakeholder-map-submissions';
         value: string | StakeholderMapSubmission;
       } | null);
@@ -1130,6 +1163,17 @@ export interface StakeholdersSelect<T extends boolean = true> {
   title?: T;
   company?: T;
   notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stakeholder-map-activities_select".
+ */
+export interface StakeholderMapActivitiesSelect<T extends boolean = true> {
+  title?: T;
+  company?: T;
+  isActive?: T;
   updatedAt?: T;
   createdAt?: T;
 }
