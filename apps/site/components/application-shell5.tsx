@@ -4,7 +4,6 @@ import {
   Bug,
   ChevronRight,
   ChevronsUpDown,
-  ClipboardList,
   HelpCircle,
   LayoutDashboard,
   LogOut,
@@ -122,8 +121,7 @@ function buildSidebarData(user?: UserData | null, logo?: Partial<SidebarData["lo
         title: "Overview",
         defaultOpen: true,
         items: [
-          { label: "Summary", icon: LayoutDashboard, href: "/dashboard", isActive: false },
-          { label: "Tasks", icon: ClipboardList, href: "/dashboard/tasks", isActive: false },
+          { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", isActive: false },
         ],
       },
     ],
@@ -215,7 +213,7 @@ const userMenuContent = (user: UserData, handleLogout: () => void) => (
     <DropdownMenuSeparator className="mx-0" />
     <DropdownMenuItem asChild>
       <Link
-        href="/dashboard"
+        href="/dashboard/account"
         className="flex cursor-pointer items-center gap-2 px-3 py-2"
       >
         <User className="size-4" />

@@ -75,10 +75,12 @@ export interface Config {
     'audience-poker-activities': AudiencePokerActivity;
     'audience-poker-submissions': AudiencePokerSubmission;
     'content-rank': ContentRank;
-    'questions-bank': QuestionsBank;
     'migration-review-sessions': MigrationReviewSession;
     'platform-survey-questions': PlatformSurveyQuestion;
     'platform-survey-responses': PlatformSurveyResponse;
+    faqs: Faq;
+    stakeholders: Stakeholder;
+    'stakeholder-map-submissions': StakeholderMapSubmission;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -94,10 +96,12 @@ export interface Config {
     'audience-poker-activities': AudiencePokerActivitiesSelect<false> | AudiencePokerActivitiesSelect<true>;
     'audience-poker-submissions': AudiencePokerSubmissionsSelect<false> | AudiencePokerSubmissionsSelect<true>;
     'content-rank': ContentRankSelect<false> | ContentRankSelect<true>;
-    'questions-bank': QuestionsBankSelect<false> | QuestionsBankSelect<true>;
     'migration-review-sessions': MigrationReviewSessionsSelect<false> | MigrationReviewSessionsSelect<true>;
     'platform-survey-questions': PlatformSurveyQuestionsSelect<false> | PlatformSurveyQuestionsSelect<true>;
     'platform-survey-responses': PlatformSurveyResponsesSelect<false> | PlatformSurveyResponsesSelect<true>;
+    faqs: FaqsSelect<false> | FaqsSelect<true>;
+    stakeholders: StakeholdersSelect<false> | StakeholdersSelect<true>;
+    'stakeholder-map-submissions': StakeholderMapSubmissionsSelect<false> | StakeholderMapSubmissionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -479,21 +483,6 @@ export interface ContentRank {
   createdAt: string;
 }
 /**
- * Reusable fill-in-the-blank prompts (questions bank). Use _____ or [blank] for the gap. Admins can select these when building a Fill in the Blank activity.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "questions-bank".
- */
-export interface QuestionsBank {
-  id: string;
-  /**
-   * The sentence with a blank. Use _____ or [blank] where the user fills in the answer.
-   */
-  text: string;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
  * Content Migration Analyzer review sessions tied to email
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -675,6 +664,93 @@ export interface PlatformSurveyResponse {
   createdAt: string;
 }
 /**
+ * Frequently asked questions shown on the dashboard FAQs page.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faqs".
+ */
+export interface Faq {
+  id: string;
+  /**
+   * The question text
+   */
+  question: string;
+  /**
+   * The answer text
+   */
+  answer: string;
+  /**
+   * Sort order (lower = first)
+   */
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Stakeholders for the Stakeholder Map exercise. Link to a company.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stakeholders".
+ */
+export interface Stakeholder {
+  id: string;
+  /**
+   * Stakeholder name
+   */
+  name: string;
+  /**
+   * Job title or role (optional)
+   */
+  title?: string | null;
+  /**
+   * Company this stakeholder belongs to
+   */
+  company: string | Company;
+  /**
+   * Facilitator-facing notes; not shown to the client user
+   */
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Stakeholder Map submissions: placements of stakeholders in the 2×2 matrix.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stakeholder-map-submissions".
+ */
+export interface StakeholderMapSubmission {
+  id: string;
+  /**
+   * Company this map is for
+   */
+  company: string | Company;
+  /**
+   * User who submitted the map
+   */
+  submittedBy: string | User;
+  /**
+   * When the submission was made
+   */
+  submittedAt: string;
+  /**
+   * Stakeholder placed in each quadrant
+   */
+  placements: {
+    /**
+     * Stakeholder
+     */
+    stakeholder: string | Stakeholder;
+    /**
+     * Quadrant in the matrix
+     */
+    quadrant: 'key-players' | 'keep-satisfied' | 'keep-informed' | 'monitor';
+    id?: string | null;
+  }[];
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -731,10 +807,6 @@ export interface PayloadLockedDocument {
         value: string | ContentRank;
       } | null)
     | ({
-        relationTo: 'questions-bank';
-        value: string | QuestionsBank;
-      } | null)
-    | ({
         relationTo: 'migration-review-sessions';
         value: string | MigrationReviewSession;
       } | null)
@@ -745,6 +817,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'platform-survey-responses';
         value: string | PlatformSurveyResponse;
+      } | null)
+    | ({
+        relationTo: 'faqs';
+        value: string | Faq;
+      } | null)
+    | ({
+        relationTo: 'stakeholders';
+        value: string | Stakeholder;
+      } | null)
+    | ({
+        relationTo: 'stakeholder-map-submissions';
+        value: string | StakeholderMapSubmission;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -957,15 +1041,6 @@ export interface ContentRankSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "questions-bank_select".
- */
-export interface QuestionsBankSelect<T extends boolean = true> {
-  text?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "migration-review-sessions_select".
  */
 export interface MigrationReviewSessionsSelect<T extends boolean = true> {
@@ -1032,6 +1107,47 @@ export interface PlatformSurveyResponsesSelect<T extends boolean = true> {
       };
   answers?: T;
   completionTime?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faqs_select".
+ */
+export interface FaqsSelect<T extends boolean = true> {
+  question?: T;
+  answer?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stakeholders_select".
+ */
+export interface StakeholdersSelect<T extends boolean = true> {
+  name?: T;
+  title?: T;
+  company?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stakeholder-map-submissions_select".
+ */
+export interface StakeholderMapSubmissionsSelect<T extends boolean = true> {
+  company?: T;
+  submittedBy?: T;
+  submittedAt?: T;
+  placements?:
+    | T
+    | {
+        stakeholder?: T;
+        quadrant?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

@@ -1,11 +1,19 @@
 import { NextResponse } from 'next/server'
 import { AUTH_COOKIE_NAME } from '@/lib/auth'
 import { getCmsUrl, getErrorMessage, isLocalhost } from '@/lib/login-helpers'
+import { checkRateLimit, getClientIp, LOGIN_LIMIT } from '@/lib/rate-limit'
 
 const COOKIE_MAX_AGE = 60 * 60 * 2 // 2 hours (match Payload tokenExpiration)
 
-// Production: consider adding rate limiting (e.g. Vercel Rate Limit, Upstash Redis) to limit login attempts per IP.
 export async function POST(request: Request) {
+  const ip = getClientIp(request)
+  if (!checkRateLimit(`login:${ip}`, LOGIN_LIMIT)) {
+    return NextResponse.json(
+      { error: 'Too many login attempts. Try again in 15 minutes.' },
+      { status: 429, headers: { 'Retry-After': '900' } },
+    )
+  }
+
   let body: { email?: string; password?: string }
   try {
     body = await request.json()
@@ -45,15 +53,21 @@ export async function POST(request: Request) {
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
     const status = res.status >= 500 ? 502 : res.status
+    const message = getErrorMessage(data)
+    console.error('Login CMS error:', res.status, message)
     return NextResponse.json(
-      { error: getErrorMessage(data) },
+      { error: message },
       { status },
     )
   }
 
   const token = (data as { token?: string }).token
   if (!token) {
-    return NextResponse.json({ error: 'No token in response' }, { status: 502 })
+    console.error('Login: CMS returned 200 but no token in response')
+    return NextResponse.json(
+      { error: 'Authentication service returned an invalid response. Try again or contact support.' },
+      { status: 502 },
+    )
   }
 
   const response = NextResponse.json({ user: (data as { user?: unknown }).user })

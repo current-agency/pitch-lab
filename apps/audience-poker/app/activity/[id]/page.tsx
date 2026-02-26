@@ -86,7 +86,7 @@ export default function ActivityPage({ params }: { params: Promise<{ id: string 
     setSubmitError(null)
     const payload = {
       activityId: id,
-      userId: userId || undefined,
+      token: token ?? undefined,
       allocations: (activity.audiences || []).map((aud, i) => ({
         audienceIndex: i,
         audienceLabel: typeof aud === 'object' ? aud.label : 'Audience',
@@ -108,7 +108,7 @@ export default function ActivityPage({ params }: { params: Promise<{ id: string 
       .then(() => setSubmitted(true))
       .catch((err) => setSubmitError(err instanceof Error ? err.message : String(err)))
       .finally(() => setSubmitting(false))
-  }, [activity, id, allocations, userId])
+  }, [activity, id, allocations, token])
 
   if (loading) {
     return (

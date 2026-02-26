@@ -1,0 +1,3 @@
+# Optional: if set, app uses this when calling CMS for stakeholders/submissions.
+# Set the same value in the CMS app so it accepts server-to-server requests.
+STAKEHOLDER_MAP_API_SECRET=zMHWfNC2GEKKcNbMFOSV/BEKERKiP+

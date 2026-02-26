@@ -6,7 +6,32 @@
 import 'dotenv/config'
 import { getPayload } from 'payload'
 import config from '../payload.config'
+import type { PlatformSurveyQuestion } from '../payload-types'
 import { platformSurveyQuestionsSeed } from '../seed/platform-survey-questions'
+
+const SECTION_ORDER: string[] = [
+  'content-complexity',
+  'editor-autonomy',
+  'marketing-personalization',
+  'integration-ecosystem',
+  'team-resources',
+  'scale-performance',
+  'budget-timeline',
+  'future-vision',
+  'day-in-the-life',
+  'workflow-builder',
+  'who-does-what',
+  'current-platform',
+  'future-state-wishlist',
+]
+
+function sectionSortOrder(section: string): number {
+  const i = SECTION_ORDER.indexOf(section)
+  return i === -1 ? 999 : i
+}
+
+/** Data for creating a platform survey question; section/sectionSortOrder aligned with collection. */
+type CreateData = Omit<PlatformSurveyQuestion, 'id' | 'createdAt' | 'updatedAt'>
 
 async function main() {
   const payload = await getPayload({ config })
@@ -27,8 +52,13 @@ async function main() {
       skipped++
       continue
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await payload.create({ collection, data: { ...q, required: q.required ?? true, isActive: q.isActive ?? true } as any, draft: false, overrideAccess: true })
+    const data = {
+      ...q,
+      sectionSortOrder: sectionSortOrder(q.section),
+      required: q.required ?? true,
+      isActive: q.isActive ?? true,
+    } as CreateData
+    await payload.create({ collection, data, draft: false, overrideAccess: true })
     created++
     console.log(`Created: ${q.questionKey}`)
   }

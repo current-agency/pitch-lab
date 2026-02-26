@@ -6,8 +6,11 @@ import { type CardData } from '@/components/feature222'
 import { requireAuth } from '@/lib/auth'
 import { createAudiencePokerToken } from '@/lib/audience-poker-token'
 import { createImageChoiceToken } from '@/lib/image-choice-token'
+import { createStakeholderMapToken } from '@/lib/stakeholder-map-token'
 
 const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
+const STAKEHOLDER_MAP_URL =
+  process.env.NEXT_PUBLIC_STAKEHOLDER_MAP_URL || 'http://localhost:3008'
 const IMAGE_CHOICE_URL =
   process.env.NEXT_PUBLIC_IMAGE_CHOICE_URL || 'http://localhost:3002'
 const CONTENT_RANK_URL =
@@ -81,6 +84,19 @@ function toSurveyCard(companyId: string): CardData {
     link: `${SURVEY_URL}?company=${encodeURIComponent(companyId)}`,
     background: SURVEY_BACKGROUND,
     stats: [{ number: 'Survey', text: 'Platform Fit Quiz: answer questions to get a platform recommendation' }],
+  }
+}
+
+function toStakeholderMapCard(companyId: string, userId: string | null): CardData {
+  const token = userId ? createStakeholderMapToken(userId) : null
+  const link = token
+    ? `${STAKEHOLDER_MAP_URL}?company=${encodeURIComponent(companyId)}&token=${encodeURIComponent(token)}`
+    : `${STAKEHOLDER_MAP_URL}?company=${encodeURIComponent(companyId)}`
+  return {
+    title: 'Stakeholder Map',
+    link,
+    background: DEFAULT_CARD_BACKGROUND,
+    stats: [{ number: 'Map', text: 'Map stakeholders by influence and interest' }],
   }
 }
 
@@ -159,11 +175,16 @@ export default async function DashboardPage() {
   const companyId = typeof userCompany === 'object' && userCompany?.id ? userCompany.id : typeof userCompany === 'string' ? userCompany : null
   const surveyEnabled = typeof userCompany === 'object' && userCompany?.platformSurveyEnabled === true
   const surveyCard = companyId && surveyEnabled ? toSurveyCard(companyId) : null
+  const stakeholderMapCard =
+    companyId && user?.id && createStakeholderMapToken(user.id)
+      ? toStakeholderMapCard(companyId, user.id)
+      : null
 
   const cards: CardData[] = [
     ...applicationCards,
     ...contentRankCards,
     ...(surveyCard ? [surveyCard] : []),
+    ...(stakeholderMapCard ? [stakeholderMapCard] : []),
   ]
 
   return (
@@ -179,7 +200,7 @@ export default async function DashboardPage() {
           <div className="mt-10 flex flex-wrap gap-6">
             {cards.map((card) => (
               <ActivityCard
-                key={card.title + card.link}
+                key={card.link}
                 status="To do"
                 title={card.title}
                 description={card.stats[0]?.text}
@@ -193,32 +214,6 @@ export default async function DashboardPage() {
             No applications assigned to you yet. Contact your administrator to get access.
           </p>
         )}
-
-        <hr className="my-12 border-slate-200" />
-
-        <div className="flex flex-wrap gap-6">
-          <ActivityCard
-            status="Completed"
-            title="Lorem ipsum dolor sit amet"
-            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
-            categoryTag="A/B"
-            href="#"
-          />
-          <ActivityCard
-            status="Completed"
-            title="Consectetur adipiscing elit"
-            description="Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
-            categoryTag="RANK"
-            href="#"
-          />
-          <ActivityCard
-            status="Completed"
-            title="Sed do eiusmod tempor"
-            description="Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
-            categoryTag="SURVEY"
-            href="#"
-          />
-        </div>
       </div>
     </ApplicationShell5>
   )

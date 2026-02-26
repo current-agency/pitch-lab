@@ -19,6 +19,8 @@ pitch-lab/
 │   ├── site/             # Marketing landing, login, dashboard (port 3000)
 │   ├── image-choice/     # Time-based image selection (port 3002)
 │   ├── content-rank/     # ScreamingFrog + GA4 page ranking (port 3003)
+│   ├── audience-poker/   # Chip-allocation activity (port 3007)
+│   ├── stakeholder-map/  # Stakeholder map by influence/interest (port 3008)
 │   ├── slider/           # Slider between two ideas (port 3004)
 │   ├── survey/           # Platform Fit Quiz (port 3005)
 │   └── fill-blank/       # Fill-in-the-blank (port 3006)
@@ -112,16 +114,47 @@ Or per app: `pnpm --filter @repo/site test`, `pnpm --filter @repo/survey test`.
 | **site**        | 3000 | Marketing landing, login/signup, user dashboard (links to survey, image-choice, content-rank). |
 | **image-choice** | 3002 | User selects between two images; time and choice can be stored. |
 | **content-rank** | 3003 | ScreamingFrog + GA4 page ranking: move, lost, reuse. |
+| **audience-poker** | 3007 | Chip-allocation activity; assigned from dashboard; optional “Back to PitchLab dashboard” link. |
+| **stakeholder-map** | 3008 | Stakeholder map by influence/interest; linked from dashboard with company + token. |
 | **slider**      | 3004 | Slider between two ideas; position recorded. |
 | **survey**      | 3005 | Platform Fit Quiz: questions from CMS, responses stored; optional “Back to PitchLab dashboard” link. |
 | **fill-blank**  | 3006 | Fill-in-the-blank text boxes; answers can be stored. |
 
 ## Environment variables
 
-- **Site:** `CMS_URL` (required). Optional: `NEXT_PUBLIC_IMAGE_CHOICE_URL`, `NEXT_PUBLIC_CONTENT_RANK_URL`, `NEXT_PUBLIC_SURVEY_URL` (default to localhost ports if unset).
-- **Survey:** `CMS_URL` (required). Optional: `NEXT_PUBLIC_DASHBOARD_URL` (shows “Back to PitchLab dashboard” when set). See `apps/survey/.env.example`.
-- **Image choice:** Optional `NEXT_PUBLIC_DASHBOARD_URL` for the back-to-dashboard link. See `apps/image-choice/.env.example`.
-- **CMS:** See `apps/cms/.env.example` for Payload, database, and feature flags.
+Each app may have its own `.env`; copy from the app’s `.env.example` and set values as needed. For production (e.g. Vercel), set these in the project’s environment variables, not in `.env` (which is for local development).
+
+| App | Variable | Required | Description |
+|-----|----------|----------|-------------|
+| **cms** | `PAYLOAD_SECRET` | Yes (prod) | Payload auth secret; must not be default in production. |
+| **cms** | `DATABASE_URI` / `MONGODB_URI` | Yes | MongoDB connection string. |
+| **cms** | `AUDIENCE_POKER_API_SECRET` | Optional | If set, Audience Poker submissions API accepts `x-audience-poker-secret` for server-to-server calls. |
+| **cms** | `STAKEHOLDER_MAP_API_SECRET` | Optional | If set, Stakeholders and Stakeholder Map submissions accept `x-stakeholder-map-secret` for server-to-server calls. |
+| **site** | `CMS_URL` | Yes | Base URL of the CMS (e.g. `http://localhost:3001`). No trailing slash. |
+| **site** | `NEXT_PUBLIC_DASHBOARD_URL` | Optional | Public URL of this site (for links back from other apps). |
+| **site** | `NEXT_PUBLIC_IMAGE_CHOICE_URL` | Optional | URL of the image-choice app (defaults to localhost:3002). |
+| **site** | `NEXT_PUBLIC_CONTENT_RANK_URL` | Optional | URL of the content-rank app. |
+| **site** | `NEXT_PUBLIC_SURVEY_URL` | Optional | URL of the survey app. |
+| **site** | `NEXT_PUBLIC_AUDIENCE_POKER_URL` | Optional | URL of the audience-poker app. |
+| **site** | `NEXT_PUBLIC_STAKEHOLDER_MAP_URL` | Optional | URL of the stakeholder-map app (defaults to localhost:3008). |
+| **site** | `IMAGE_CHOICE_TOKEN_SECRET` | Optional | Shared secret with image-choice for JWT links; required for dashboard image-choice links. |
+| **site** | `AUDIENCE_POKER_TOKEN_SECRET` | Optional | Shared secret with audience-poker for JWT links; required for dashboard audience-poker links. |
+| **site** | `STAKEHOLDER_MAP_TOKEN_SECRET` | Optional | Shared secret with stakeholder-map for token in dashboard link. |
+| **survey** | `CMS_URL` | Yes | Base URL of the CMS. |
+| **survey** | `NEXT_PUBLIC_DASHBOARD_URL` | Optional | “Back to PitchLab dashboard” link when set. |
+| **image-choice** | `CMS_URL` | Yes | Base URL of the CMS. |
+| **image-choice** | `IMAGE_CHOICE_TOKEN_SECRET` | Yes (dashboard links) | Must match site; used to verify JWT from dashboard. |
+| **image-choice** | `NEXT_PUBLIC_DASHBOARD_URL` | Optional | Back-to-dashboard link. |
+| **audience-poker** | `CMS_URL` | Yes | Base URL of the CMS. |
+| **audience-poker** | `AUDIENCE_POKER_TOKEN_SECRET` | Yes (dashboard links) | Must match site; used to verify JWT from dashboard. |
+| **audience-poker** | `NEXT_PUBLIC_DASHBOARD_URL` | Optional | Back-to-dashboard link. |
+| **stakeholder-map** | `CMS_URL` | Yes | Base URL of the CMS. |
+| **stakeholder-map** | `STAKEHOLDER_MAP_TOKEN_SECRET` | Yes (dashboard links) | Must match site; used to verify token from dashboard. |
+| **stakeholder-map** | `STAKEHOLDER_MAP_API_SECRET` | Optional | If set, app sends it when calling CMS; set same in CMS for server-to-server. |
+| **stakeholder-map** | `NEXT_PUBLIC_DASHBOARD_URL` | Optional | Back-to-dashboard link. |
+| **content-rank** | `CMS_URL` | Yes | Base URL of the CMS. |
+
+See each app’s `.env.example` for a full list and defaults.
 
 ## Authentication
 
@@ -133,7 +166,8 @@ Or per app: `pnpm --filter @repo/site test`, `pnpm --filter @repo/survey test`.
 - **CMS:** In production, `PAYLOAD_SECRET` must be set to a secure random value; the app throws on startup if it is missing or still the default `change-me-in-production`.
 - **Site auth cookie:** httpOnly, `secure` in production, `sameSite: 'lax'`. In production the cookie name uses the `__Host-` prefix so it is host-only and not sent to subdomains.
 - **Site headers:** `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` are set via Next.js config.
-- **Login:** Consider adding rate limiting (e.g. Vercel Rate Limit, Upstash Redis) in production to limit login attempts per IP; the login route does not implement rate limiting.
+- **Login and change-password:** In-memory rate limiting (10 login attempts per 15 min per IP; 5 change-password attempts per 15 min per IP). In serverless deployments limits are per-instance; for strict cross-instance limits use Redis (e.g. Upstash) or Vercel Rate Limit.
+- **Audience-poker submit:** Submissions require a valid JWT from the dashboard link; `userId` is derived server-side from the token only (no client-sent userId accepted).
 - **Content-rank links:** The dashboard builds links that include an `accessToken` in the query string. Those URLs can leak via Referer or browser history; avoid sharing them. Prefer short-lived tokens or POST-based access if you need stricter control.
 
 ## Next steps

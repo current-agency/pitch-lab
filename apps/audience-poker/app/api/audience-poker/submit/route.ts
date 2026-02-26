@@ -1,35 +1,43 @@
 import { NextResponse } from 'next/server'
+import { createLogger, getCmsUrl } from '@repo/env'
 import { validate } from '../../../../lib/validate'
+import { verifyAudiencePokerToken } from '../../../../lib/verify-token'
 
-const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
+const log = createLogger('audience-poker/submit')
 
 type RequestBody = {
   activityId: string
-  userId?: string | null
+  /** JWT from dashboard link; required so userId cannot be spoofed */
+  token?: string | null
   allocations: { audienceIndex: number; audienceLabel: string; chips: number }[]
 }
 
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as RequestBody
-    const { activityId, userId, allocations } = body
+    const { activityId, token, allocations } = body
     if (!activityId || !Array.isArray(allocations)) {
       return NextResponse.json(
         { error: 'activityId and allocations (array) required' },
         { status: 400 },
       )
     }
-    // User is required for submission; can be provided via token resolution or request body when opened from dashboard
-    const submitUserId = userId ?? null
-    if (!submitUserId) {
+    if (!token || typeof token !== 'string') {
       return NextResponse.json(
         { error: 'User context required to submit. Open this activity from the dashboard.' },
         { status: 401 },
       )
     }
+    const submitUserId = verifyAudiencePokerToken(token)
+    if (!submitUserId) {
+      return NextResponse.json(
+        { error: 'Invalid or expired link. Open this activity again from the dashboard.' },
+        { status: 401 },
+      )
+    }
 
     // 1. Fetch activity from Payload
-    const activityRes = await fetch(`${CMS_URL}/api/audience-poker-activities/${activityId}?depth=0`, {
+    const activityRes = await fetch(`${getCmsUrl()}/api/audience-poker-activities/${activityId}?depth=0`, {
       next: { revalidate: 0 },
     })
     if (!activityRes.ok) {
@@ -38,10 +46,16 @@ export async function POST(request: Request) {
       }
       return NextResponse.json({ error: 'Failed to load activity' }, { status: 502 })
     }
-    const activity = (await activityRes.json()) as {
-      id: string
-      chipBudget: number
-      audiences: { id: string; label: string }[]
+    const activityText = await activityRes.text()
+    let activity: { id: string; chipBudget: number; audiences: { id: string; label: string }[] }
+    try {
+      activity = JSON.parse(activityText || '{}') as typeof activity
+    } catch {
+      log.error('Activity response non-JSON:', activityText.slice(0, 200))
+      return NextResponse.json({ error: 'Invalid response from CMS' }, { status: 502 })
+    }
+    if (!activity.id || typeof activity.chipBudget !== 'number' || !Array.isArray(activity.audiences)) {
+      return NextResponse.json({ error: 'Invalid activity data' }, { status: 502 })
     }
 
     const chipBudget = activity.chipBudget
@@ -76,7 +90,7 @@ export async function POST(request: Request) {
     // 4. Check for existing submission (prevent double-submit)
     {
       const submissionsRes = await fetch(
-        `${CMS_URL}/api/audience-poker-submissions?where[activity][equals]=${activityId}&where[user][equals]=${submitUserId}&limit=1`,
+        `${getCmsUrl()}/api/audience-poker-submissions?where[activity][equals]=${activityId}&where[user][equals]=${submitUserId}&limit=1`,
         { next: { revalidate: 0 }, headers: getCmsHeaders() },
       )
       if (!submissionsRes.ok) {
@@ -97,14 +111,14 @@ export async function POST(request: Request) {
       user: submitUserId,
       allocations: allocations.map((a) => ({ audienceLabel: a.audienceLabel, chips: a.chips })),
     }
-    const createRes = await fetch(`${CMS_URL}/api/audience-poker-submissions`, {
+    const createRes = await fetch(`${getCmsUrl()}/api/audience-poker-submissions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...getCmsHeaders() },
       body: JSON.stringify(payload),
     })
     const createText = await createRes.text()
     if (!createRes.ok) {
-      console.error('[audience-poker submit] CMS create error:', createRes.status, createText)
+      log.error('CMS create error:', createRes.status, createText)
       return NextResponse.json(
         { error: createRes.status === 403 ? 'Not authorized to save submission. Set AUDIENCE_POKER_API_SECRET in CMS and app.' : 'Failed to save submission' },
         { status: createRes.status >= 500 ? 502 : createRes.status },
@@ -113,7 +127,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[audience-poker submit]', err)
+    log.error(err)
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Submission failed' },
       { status: 502 },

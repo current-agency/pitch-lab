@@ -6,7 +6,6 @@ import { mongooseAdapter } from '@payloadcms/db-mongodb'
 import { buildConfig } from 'payload'
 import { Companies } from './collections/Companies'
 import { ContentRank } from './collections/ContentRank'
-import { QuestionsBank } from './collections/QuestionsBank'
 import { ImageChoiceAssessments } from './collections/ImageChoiceAssessments'
 import { ImageChoiceResponses } from './collections/ImageChoiceResponses'
 import { AudiencePokerActivities } from './collections/AudiencePokerActivities'
@@ -16,6 +15,9 @@ import { MigrationReviewSession, generateSessionId } from './collections/Migrati
 import { PlatformSurveyQuestions } from './collections/PlatformSurveyQuestions'
 import { PlatformSurveyResponses } from './collections/PlatformSurveyResponses'
 import { Users } from './collections/Users'
+import { Faqs } from './collections/Faqs'
+import { StakeholderMapSubmissions } from './collections/StakeholderMapSubmissions'
+import { Stakeholders } from './collections/Stakeholders'
 import { SECTION_LABELS, sortGroupedSections } from './lib/platform-survey-section-order'
 
 const filename = fileURLToPath(import.meta.url)
@@ -316,7 +318,7 @@ export default buildConfig({
     // Avoid hydration warnings when browser extensions (e.g. cz-shortcut-listen) modify <body>
     suppressHydrationWarning: true,
   },
-  collections: [Companies, Users, Media, ImageChoiceAssessments, ImageChoiceResponses, AudiencePokerActivities, AudiencePokerSubmissions, ContentRank, QuestionsBank, MigrationReviewSession, PlatformSurveyQuestions, PlatformSurveyResponses],
+  collections: [Companies, Users, Media, ImageChoiceAssessments, ImageChoiceResponses, AudiencePokerActivities, AudiencePokerSubmissions, ContentRank, MigrationReviewSession, PlatformSurveyQuestions, PlatformSurveyResponses, Faqs, Stakeholders, StakeholderMapSubmissions],
   editor: lexicalEditor(),
   secret: payloadSecret || 'change-me-in-production',
   typescript: {
