@@ -174,7 +174,7 @@ function SurveyClientContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
         <p className="text-slate-600">Loading survey...</p>
       </div>
     )
@@ -182,7 +182,7 @@ function SurveyClientContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-900">
           <p className="font-medium">Could not load survey</p>
           <p className="mt-1 text-sm">{error}</p>
@@ -196,7 +196,7 @@ function SurveyClientContent() {
 
   if (sections.length === 0) {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
         <p className="text-slate-600">No questions available. Add questions in the CMS.</p>
         <Link href="/dashboard" className="ml-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
           ← Back to dashboard
@@ -207,7 +207,7 @@ function SurveyClientContent() {
 
   if (step === 'thankyou') {
     return (
-      <div className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-stone-100 p-6 flex items-center justify-center">
         <div className="rounded-lg border border-slate-200 bg-white p-8 shadow-sm text-center max-w-lg w-full">
           <h2 className="text-xl font-semibold text-slate-900">Thank you</h2>
           <p className="mt-2 text-slate-600">Your responses have been recorded.</p>
@@ -234,7 +234,7 @@ function SurveyClientContent() {
 
   if (step === 'summary') {
     return (
-      <div className="min-h-screen bg-slate-100 p-6">
+      <div className="min-h-screen bg-stone-100 p-6">
         <div className="mx-auto max-w-2xl">
           <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
             ← Back to dashboard
@@ -273,7 +273,7 @@ function SurveyClientContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 p-6">
+    <div className="min-h-screen bg-stone-100 p-6">
       <div className="mx-auto max-w-2xl">
         <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
           ← Back to dashboard
@@ -337,7 +337,7 @@ export default function SurveyClient() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
+        <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
           <p className="text-slate-600">Loading...</p>
         </div>
       }

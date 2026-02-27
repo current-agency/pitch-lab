@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-stone-100">
       <main className="max-w-4xl mx-auto px-6 text-center">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-slate-900 mb-4">
           Welcome

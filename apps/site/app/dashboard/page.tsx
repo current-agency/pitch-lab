@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { ActivityCard } from '@/components/activity-card'
 import { ApplicationShell5 } from '@/components/application-shell5'
-import { type CardData } from '@/components/feature222'
+import { type CardData } from '@/components/dashboard-card-types'
 import { getCmsUrl } from '@repo/env'
 import { requireAuth } from '@/lib/auth'
 const DEFAULT_CARD_BACKGROUND =

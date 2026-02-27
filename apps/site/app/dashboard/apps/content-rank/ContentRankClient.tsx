@@ -83,7 +83,7 @@ function ContentRankContent() {
 
   if (loadingInstance && !instance) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
         <p className="text-slate-600">Loading...</p>
       </div>
     )
@@ -91,7 +91,7 @@ function ContentRankContent() {
 
   if (error && !instance) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-900">
           <p className="font-medium">Could not load content rank</p>
           <p className="mt-1 text-sm">{error}</p>
@@ -105,7 +105,7 @@ function ContentRankContent() {
 
   if (!instanceId) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
         <p className="text-slate-600">Missing instance. Open from the dashboard.</p>
         <Link href="/dashboard" className="ml-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
           ← Back to dashboard
@@ -115,7 +115,7 @@ function ContentRankContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen bg-stone-100 p-6">
       <div className="mx-auto max-w-5xl">
         <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -201,7 +201,7 @@ export default function ContentRankClient() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
           <p className="text-slate-600">Loading...</p>
         </div>
       }

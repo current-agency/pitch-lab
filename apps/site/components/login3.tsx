@@ -40,7 +40,7 @@ const Login3 = ({
   onSubmit,
 }: Login3Props) => {
   return (
-    <section className={cn('h-screen bg-white', className)}>
+    <section className={cn('h-screen bg-stone-100', className)}>
       <div className="flex h-full items-center justify-center">
         <div className="flex flex-col items-center gap-6 lg:justify-start">
           <form

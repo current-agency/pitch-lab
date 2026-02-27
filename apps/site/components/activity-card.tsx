@@ -34,7 +34,7 @@ export function ActivityCard({
         <span
           className={cn(
             'rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-white',
-            status === 'Completed' ? 'bg-black' : 'bg-[#2563eb]',
+            status === 'Completed' ? 'bg-black' : 'bg-[#0100FE]',
           )}
         >
           {status}

@@ -11,7 +11,7 @@ export default async function AudiencePokerActivityPage({
   requireAuth(cookieStore)
 
   return (
-    <div className="min-h-screen bg-slate-100 p-6">
+    <div className="min-h-screen bg-stone-100 p-6">
       <AudiencePokerActivityClient params={params} />
     </div>
   )
