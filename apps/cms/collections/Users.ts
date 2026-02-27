@@ -11,6 +11,7 @@ export const Users: CollectionConfig = {
     depth: 1, // Include company in JWT so content-rank read access works for client-users
   },
   admin: {
+    group: 'Admin',
     useAsTitle: 'email',
     defaultColumns: ['firstName', 'lastName', 'email', 'userType', 'company', 'assignedApplications'],
   },
@@ -123,6 +124,16 @@ export const Users: CollectionConfig = {
       admin: {
         readOnly: true,
         description: 'Last time user logged in',
+      },
+    },
+    {
+      name: 'activityResets',
+      type: 'ui',
+      admin: {
+        position: 'sidebar',
+        components: {
+          Field: './components/UserActivityResetField#UserActivityResetField',
+        },
       },
     },
   ],

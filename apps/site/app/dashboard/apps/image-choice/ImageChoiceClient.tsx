@@ -13,6 +13,7 @@ type Phase = 'loading' | 'list' | 'pair' | 'done' | 'error'
 const API = {
   assessments: '/api/apps/image-choice/assessments',
   assessment: (id: string) => `/api/apps/image-choice/assessment/${id}`,
+  submission: (id: string) => `/api/apps/image-choice/submission?assessment=${encodeURIComponent(id)}`,
   responses: '/api/apps/image-choice/responses',
 }
 
@@ -34,6 +35,7 @@ function ImageChoiceContent() {
   const [results, setResults] = useState<{ pairIndex: number; side: 'left' | 'right'; elapsedMs: number }[]>([])
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [existingCompletedAt, setExistingCompletedAt] = useState<string | null>(null)
   const saveSubmittedRef = useRef(false)
 
   useEffect(() => {
@@ -83,15 +85,29 @@ function ImageChoiceContent() {
   }, [assessmentId])
 
   const loadAssessment = useCallback(async (id: string) => {
-    const res = await fetch(API.assessment(id), { credentials: 'include' })
-    if (!res.ok) {
-      setError(await res.text())
+    const [assessmentRes, submissionRes] = await Promise.all([
+      fetch(API.assessment(id), { credentials: 'include' }),
+      fetch(API.submission(id), { credentials: 'include' }),
+    ])
+    if (!assessmentRes.ok) {
+      setError(await assessmentRes.text())
       setPhase('error')
       return
     }
-    const data = await res.json()
+    const data = await assessmentRes.json()
     setAssessment(data)
-    setPhase('pair')
+
+    const sub = submissionRes.ok ? await submissionRes.json().catch(() => null) : null
+    const existing = sub as { responses?: { pairIndex: number; side: 'left' | 'right'; elapsedMs: number }[]; completedAt?: string } | null
+    if (existing?.responses && Array.isArray(existing.responses) && existing.responses.length > 0) {
+      setResults(existing.responses)
+      setExistingCompletedAt(existing.completedAt ?? null)
+      setSaveStatus('saved')
+      saveSubmittedRef.current = true
+      setPhase('done')
+    } else {
+      setPhase('pair')
+    }
   }, [])
 
   useEffect(() => {
@@ -193,6 +209,21 @@ function ImageChoiceContent() {
   }
 
   if (phase === 'done' && assessment) {
+    const selectedImages = results.map((r) => {
+      const pair = assessment.imagePairs[r.pairIndex]
+      if (!pair) return null
+      const media = r.side === 'left' ? pair.imageLeft : pair.imageRight
+      const url = getMediaUrl(media)
+      const alt =
+        typeof media !== 'string' && media?.alt
+          ? media.alt
+          : r.side === 'left'
+            ? 'Left option'
+            : 'Right option'
+      const pairTitle = pair.pairTitle || `Pair ${r.pairIndex + 1}`
+      return { url, alt, pairTitle, pairIndex: r.pairIndex }
+    }).filter(Boolean) as { url: string | null; alt: string; pairTitle: string; pairIndex: number }[]
+
     return (
       <div className="mx-auto max-w-[67.76rem]">
         <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
@@ -200,7 +231,10 @@ function ImageChoiceContent() {
         </Link>
         <h1 className="mb-6 text-2xl font-bold text-slate-900">{assessment.title}</h1>
         <p className="text-slate-700">Thank you. You completed all {assessment.imagePairs.length} pair(s).</p>
-        {results.length > 0 && (
+        {existingCompletedAt && (
+          <p className="mt-2 text-sm text-slate-500">Completed on {new Date(existingCompletedAt).toLocaleDateString()}</p>
+        )}
+        {!existingCompletedAt && results.length > 0 && (
           <p className="mt-2 text-sm text-slate-500">
             {(saveStatus === 'idle' || saveStatus === 'saving') && 'Saving responses…'}
             {saveStatus === 'saved' && 'Responses saved.'}
@@ -208,6 +242,32 @@ function ImageChoiceContent() {
               <span className="text-red-600">Could not save responses: {saveError}</span>
             )}
           </p>
+        )}
+        {selectedImages.length > 0 && (
+          <section className="mt-8" aria-label="Your selections">
+            <h2 className="mb-4 text-lg font-semibold text-slate-900">Your selections</h2>
+            <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+              {selectedImages.map(({ url, alt, pairTitle, pairIndex }) => (
+                <li key={pairIndex} className="flex flex-col gap-1">
+                  <div className="relative aspect-video overflow-hidden rounded-lg border border-slate-300 bg-slate-100">
+                    {url ? (
+                      <Image
+                        src={url}
+                        alt={alt}
+                        fill
+                        className="object-contain"
+                        unoptimized={url.startsWith('http://localhost')}
+                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                      />
+                    ) : (
+                      <span className="flex h-full items-center justify-center text-slate-500 text-sm">No image</span>
+                    )}
+                  </div>
+                  <span className="text-sm font-medium text-slate-700">{pairTitle}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
       </div>
     )

@@ -1,10 +1,7 @@
 /**
  * Helpers used by the login API route. Exported for testing.
  */
-export function getCmsUrl(): string {
-  const url = process.env.CMS_URL || 'http://localhost:3001'
-  return url.replace(/\/?$/, '')
-}
+export { getCmsUrl } from '@repo/env'
 
 export function isLocalhost(url: string): boolean {
   try {

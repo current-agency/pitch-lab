@@ -4,25 +4,28 @@
  */
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { getCmsUrl } from '@repo/env'
 import { getToken } from '@/lib/auth'
+import { apiError, apiUnauthorized } from '@/lib/api-response'
+import { createLogger } from '@repo/env'
 
-const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
+const log = createLogger('content-rank/result')
 
 export async function GET(request: Request) {
   const cookieStore = await cookies()
   const token = getToken(cookieStore)
   if (!token) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json(apiUnauthorized(), { status: 401 })
   }
 
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
   if (!id) {
-    return NextResponse.json({ error: 'id required' }, { status: 400 })
+    return NextResponse.json(apiError('id required'), { status: 400 })
   }
 
   try {
-    const base = CMS_URL.replace(/\/$/, '')
+    const base = getCmsUrl()
     const docRes = await fetch(`${base}/api/content-rank/${id}?depth=0`, {
       headers: { Authorization: `JWT ${token}` },
       cache: 'no-store',
@@ -34,10 +37,10 @@ export async function GET(request: Request) {
     const doc = (await docRes.json()) as { accessToken?: string; isActive?: boolean }
     const accessToken = doc.accessToken
     if (!accessToken) {
-      return NextResponse.json({ error: 'Instance has no access token' }, { status: 400 })
+      return NextResponse.json(apiError('Instance has no access token'), { status: 400 })
     }
     if (doc.isActive === false) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return NextResponse.json(apiError('Not found'), { status: 404 })
     }
 
     const resultParams = new URLSearchParams(searchParams)
@@ -53,7 +56,7 @@ export async function GET(request: Request) {
     return NextResponse.json(data)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
-    console.error('[content-rank/result]', message)
-    return NextResponse.json({ error: message }, { status: 502 })
+    log.error(message)
+    return NextResponse.json(apiError('Failed to load result', message), { status: 502 })
   }
 }

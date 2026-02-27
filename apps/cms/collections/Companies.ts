@@ -9,6 +9,7 @@ export const Companies: CollectionConfig = {
     delete: ({ req }) => (req.user as { userType?: string })?.userType === 'admin',
   },
   admin: {
+    group: 'Admin',
     useAsTitle: 'name',
     defaultColumns: ['name', 'platformSurveyEnabled', 'updatedAt'],
   },

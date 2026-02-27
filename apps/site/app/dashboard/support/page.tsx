@@ -3,13 +3,13 @@ import { cookies } from 'next/headers'
 import { ApplicationShell5 } from '@/components/application-shell5'
 import { requireAuth } from '@/lib/auth'
 
-const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
+import { getCmsUrl } from '@repo/env'
 
 export default async function SupportPage() {
   const cookieStore = await cookies()
   const { token } = requireAuth(cookieStore)
 
-  const res = await fetch(`${CMS_URL}/api/users/me?depth=0`, {
+  const res = await fetch(`${getCmsUrl()}/api/users/me?depth=0`, {
     headers: { Authorization: `JWT ${token}` },
     next: { revalidate: 0 },
   })

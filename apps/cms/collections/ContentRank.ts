@@ -11,6 +11,7 @@ function generateAccessToken() {
 export const ContentRank: CollectionConfig = {
   slug: 'content-rank',
   admin: {
+    group: 'Apps',
     useAsTitle: 'title',
     defaultColumns: ['title', 'company', 'updatedAt'],
   },

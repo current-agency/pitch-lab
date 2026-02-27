@@ -18,7 +18,7 @@ export interface ActivityCardProps {
 }
 
 const cardClassName =
-  'flex w-full max-w-[365px] flex-col items-start gap-12 rounded-[24px] bg-white p-6 shadow-sm transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
+  'flex w-full max-w-[365px] flex-col items-start gap-9 rounded-[1rem] bg-white p-[1.5rem] shadow-sm transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
 
 export function ActivityCard({
   status,

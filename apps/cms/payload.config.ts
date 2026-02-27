@@ -37,6 +37,17 @@ if (process.env.NODE_ENV === 'production' && (!payloadSecret || payloadSecret ==
   )
 }
 
+/** In production, survey proxy endpoints require ACTIVITY_LINK_SECRET; return 503 if missing. */
+function requireActivitySecretInProduction(): Response | null {
+  if (process.env.NODE_ENV === 'production' && !process.env.ACTIVITY_LINK_SECRET) {
+    return Response.json(
+      { error: 'Survey API not configured. Set ACTIVITY_LINK_SECRET in production.' },
+      { status: 503 }
+    )
+  }
+  return null
+}
+
 export default buildConfig({
   serverURL,
   endpoints: [
@@ -65,9 +76,301 @@ export default buildConfig({
       },
     },
     {
+      path: '/dashboard-completions',
+      method: 'get',
+      handler: async (req) => {
+        const user = req.user as { id?: string } | undefined
+        if (!user?.id) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const userId = user.id
+        try {
+          const [imageChoiceRes, audiencePokerRes, stakeholderMapRes, surveyRes] = await Promise.all([
+            req.payload.find({
+              collection: 'image-choice-responses',
+              where: { user: { equals: userId } },
+              limit: 500,
+              depth: 0,
+              overrideAccess: true,
+            }),
+            req.payload.find({
+              collection: 'audience-poker-submissions',
+              where: { user: { equals: userId } },
+              limit: 500,
+              depth: 0,
+              overrideAccess: true,
+            }),
+            req.payload.find({
+              collection: 'stakeholder-map-submissions',
+              where: { submittedBy: { equals: userId } },
+              limit: 500,
+              depth: 0,
+            }),
+            req.payload.find({
+              collection: 'platform-survey-responses',
+              where: { user: { equals: userId } },
+              limit: 1,
+              depth: 0,
+              overrideAccess: true,
+            }),
+          ])
+          const imageChoiceAssessmentIds = imageChoiceRes.docs.map((d) => {
+            const a = (d as { assessment?: string | { id: string } }).assessment
+            return typeof a === 'object' && a?.id ? a.id : typeof a === 'string' ? a : ''
+          }).filter(Boolean)
+          const audiencePokerActivityIds = audiencePokerRes.docs.map((d) => {
+            const a = (d as { activity?: string | { id: string } }).activity
+            return typeof a === 'object' && a?.id ? a.id : typeof a === 'string' ? a : ''
+          }).filter(Boolean)
+          const stakeholderMapActivityIds = stakeholderMapRes.docs.map((d) => {
+            const a = (d as { activity?: string | { id: string } }).activity
+            return typeof a === 'object' && a?.id ? a.id : typeof a === 'string' ? a : ''
+          }).filter(Boolean)
+          const surveyCompleted = surveyRes.docs.length > 0
+          return Response.json({
+            imageChoiceAssessmentIds: [...new Set(imageChoiceAssessmentIds)],
+            audiencePokerActivityIds: [...new Set(audiencePokerActivityIds)],
+            stakeholderMapActivityIds: [...new Set(stakeholderMapActivityIds)],
+            surveyCompleted,
+          })
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err)
+          console.error('[dashboard-completions]', message)
+          return Response.json({ error: message }, { status: 500 })
+        }
+      },
+    },
+    {
+      path: '/user-activity-completions',
+      method: 'get',
+      handler: async (req) => {
+        const user = req.user as { userType?: string; id?: string } | undefined
+        if (user?.userType !== 'admin') {
+          return Response.json({ error: 'Forbidden' }, { status: 403 })
+        }
+        const url = new URL(req.url || '', 'http://localhost')
+        const userId = url.searchParams.get('userId')?.trim()
+        if (!userId) {
+          return Response.json({ error: 'userId query required' }, { status: 400 })
+        }
+        try {
+          const [imageChoiceRes, audiencePokerRes, stakeholderMapRes, surveyRes] = await Promise.all([
+            req.payload.find({
+              collection: 'image-choice-responses',
+              where: { user: { equals: userId } },
+              limit: 500,
+              depth: 1,
+              overrideAccess: true,
+            }),
+            req.payload.find({
+              collection: 'audience-poker-submissions',
+              where: { user: { equals: userId } },
+              limit: 500,
+              depth: 1,
+              overrideAccess: true,
+            }),
+            req.payload.find({
+              collection: 'stakeholder-map-submissions',
+              where: { submittedBy: { equals: userId } },
+              limit: 500,
+              depth: 1,
+              overrideAccess: true,
+            }),
+            req.payload.find({
+              collection: 'platform-survey-responses',
+              where: { user: { equals: userId } },
+              limit: 10,
+              depth: 0,
+              overrideAccess: true,
+            }),
+          ])
+          type Item = { type: string; entityId: string; title: string; submissionId: string }
+          const items: Item[] = []
+          for (const d of imageChoiceRes.docs) {
+            const doc = d as { id: string; assessment?: string | { id: string; title?: string } }
+            const a = doc.assessment
+            const id = typeof a === 'object' && a?.id ? a.id : typeof a === 'string' ? a : ''
+            const title = typeof a === 'object' && a?.title ? String(a.title) : id || 'Image choice'
+            items.push({ type: 'image-choice', entityId: id, title, submissionId: doc.id })
+          }
+          for (const d of audiencePokerRes.docs) {
+            const doc = d as { id: string; activity?: string | { id: string; title?: string } }
+            const a = doc.activity
+            const id = typeof a === 'object' && a?.id ? a.id : typeof a === 'string' ? a : ''
+            const title = typeof a === 'object' && a?.title ? String(a.title) : id || 'Audience Poker'
+            items.push({ type: 'audience-poker', entityId: id, title, submissionId: doc.id })
+          }
+          for (const d of stakeholderMapRes.docs) {
+            const doc = d as { id: string; activity?: string | { id: string; title?: string } }
+            const a = doc.activity
+            const id = typeof a === 'object' && a?.id ? a.id : typeof a === 'string' ? a : ''
+            const title = typeof a === 'object' && a?.title ? String(a.title) : id || 'Stakeholder Map'
+            items.push({ type: 'stakeholder-map', entityId: id, title, submissionId: doc.id })
+          }
+          for (const d of surveyRes.docs) {
+            const doc = d as { id: string }
+            items.push({ type: 'survey', entityId: 'survey', title: 'Platform Fit', submissionId: doc.id })
+          }
+          return Response.json({ items })
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err)
+          console.error('[user-activity-completions]', message)
+          return Response.json({ error: message }, { status: 500 })
+        }
+      },
+    },
+    {
+      path: '/reset-user-activity',
+      method: 'post',
+      handler: async (req) => {
+        const user = req.user as { userType?: string; id?: string } | undefined
+        if (user?.userType !== 'admin') {
+          return Response.json({ error: 'Forbidden' }, { status: 403 })
+        }
+        let body: { userId?: string; activityType?: string; entityId?: string; submissionId?: string } | null = null
+        if (typeof (req as Request).json === 'function') {
+          body = await (req as Request).json()
+        } else if ((req as { body?: unknown }).body) {
+          body = (req as { body: typeof body }).body
+        }
+        if (!body || typeof body !== 'object' || typeof body.userId !== 'string' || !body.userId.trim()) {
+          return Response.json({ error: 'userId required' }, { status: 400 })
+        }
+        const userId = body.userId.trim()
+        const activityType = typeof body.activityType === 'string' ? body.activityType.trim() : ''
+        const entityId = typeof body.entityId === 'string' ? body.entityId.trim() : ''
+        const submissionId = typeof body.submissionId === 'string' ? body.submissionId.trim() : ''
+        try {
+          if (submissionId) {
+            if (activityType === 'image-choice') {
+              await req.payload.delete({
+                collection: 'image-choice-responses',
+                id: submissionId,
+                overrideAccess: true,
+              })
+            } else if (activityType === 'audience-poker') {
+              await req.payload.delete({
+                collection: 'audience-poker-submissions',
+                id: submissionId,
+                overrideAccess: true,
+              })
+            } else if (activityType === 'stakeholder-map') {
+              await req.payload.delete({
+                collection: 'stakeholder-map-submissions',
+                id: submissionId,
+                overrideAccess: true,
+              })
+            } else if (activityType === 'survey') {
+              await req.payload.delete({
+                collection: 'platform-survey-responses',
+                id: submissionId,
+                overrideAccess: true,
+              })
+            } else {
+              return Response.json({ error: 'Invalid activityType when using submissionId' }, { status: 400 })
+            }
+            return Response.json({ ok: true })
+          }
+          if (!activityType) {
+            return Response.json({ error: 'activityType or submissionId required' }, { status: 400 })
+          }
+          if (activityType === 'survey') {
+            const res = await req.payload.find({
+              collection: 'platform-survey-responses',
+              where: { user: { equals: userId } },
+              limit: 1,
+              depth: 0,
+              overrideAccess: true,
+            })
+            if (res.docs.length > 0) {
+              const doc = res.docs[0]
+              if (doc?.id) {
+                await req.payload.delete({
+                  collection: 'platform-survey-responses',
+                  id: doc.id,
+                  overrideAccess: true,
+                })
+              }
+            }
+            return Response.json({ ok: true })
+          }
+          if (!entityId) {
+            return Response.json({ error: 'entityId required for this activity type' }, { status: 400 })
+          }
+          if (activityType === 'image-choice') {
+            const res = await req.payload.find({
+              collection: 'image-choice-responses',
+              where: { user: { equals: userId }, assessment: { equals: entityId } },
+              limit: 1,
+              depth: 0,
+              overrideAccess: true,
+            })
+            if (res.docs.length > 0) {
+              const doc = res.docs[0]
+              if (doc?.id) {
+                await req.payload.delete({
+                  collection: 'image-choice-responses',
+                  id: doc.id,
+                  overrideAccess: true,
+                })
+              }
+            }
+            return Response.json({ ok: true })
+          }
+          if (activityType === 'audience-poker') {
+            const res = await req.payload.find({
+              collection: 'audience-poker-submissions',
+              where: { user: { equals: userId }, activity: { equals: entityId } },
+              limit: 1,
+              depth: 0,
+              overrideAccess: true,
+            })
+            if (res.docs.length > 0) {
+              const doc = res.docs[0]
+              if (doc?.id) {
+                await req.payload.delete({
+                  collection: 'audience-poker-submissions',
+                  id: doc.id,
+                  overrideAccess: true,
+                })
+              }
+            }
+            return Response.json({ ok: true })
+          }
+          if (activityType === 'stakeholder-map') {
+            const res = await req.payload.find({
+              collection: 'stakeholder-map-submissions',
+              where: { submittedBy: { equals: userId }, activity: { equals: entityId } },
+              limit: 1,
+              depth: 0,
+              overrideAccess: true,
+            })
+            if (res.docs.length > 0) {
+              const doc = res.docs[0]
+              if (doc?.id) {
+                await req.payload.delete({
+                  collection: 'stakeholder-map-submissions',
+                  id: doc.id,
+                  overrideAccess: true,
+                })
+              }
+            }
+            return Response.json({ ok: true })
+          }
+          return Response.json({ error: 'Unknown activity type' }, { status: 400 })
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err)
+          console.error('[reset-user-activity]', message)
+          return Response.json({ error: message }, { status: 500 })
+        }
+      },
+    },
+    {
       path: '/platform-survey-questions/grouped',
       method: 'get',
       handler: async (req) => {
+        const notConfigured = requireActivitySecretInProduction()
+        if (notConfigured) return notConfigured
         try {
           const secret = process.env.ACTIVITY_LINK_SECRET
           if (secret && req.headers?.get?.('x-activity-app-secret') !== secret) {
@@ -105,6 +408,8 @@ export default buildConfig({
       path: '/platform-survey-config',
       method: 'get',
       handler: async (req) => {
+        const notConfigured = requireActivitySecretInProduction()
+        if (notConfigured) return notConfigured
         try {
           const secret = process.env.ACTIVITY_LINK_SECRET
           if (secret && req.headers?.get?.('x-activity-app-secret') !== secret) {
@@ -319,7 +624,22 @@ export default buildConfig({
     // Avoid hydration warnings when browser extensions (e.g. cz-shortcut-listen) modify <body>
     suppressHydrationWarning: true,
   },
-  collections: [Companies, Users, Media, ImageChoiceAssessments, ImageChoiceResponses, AudiencePokerActivities, AudiencePokerSubmissions, ContentRank, MigrationReviewSession, PlatformSurveyQuestions, PlatformSurveyResponses, Faqs, StakeholderMapActivities, StakeholderMapSubmissions],
+  collections: [
+    Companies,
+    Users,
+    Media,
+    Faqs,
+    ImageChoiceAssessments,
+    AudiencePokerActivities,
+    ContentRank,
+    PlatformSurveyQuestions,
+    StakeholderMapActivities,
+    ImageChoiceResponses,
+    AudiencePokerSubmissions,
+    PlatformSurveyResponses,
+    StakeholderMapSubmissions,
+    MigrationReviewSession,
+  ],
   plugins: [
     // Use Vercel Blob in production so uploads work (serverless filesystem is read-only). Set BLOB_READ_WRITE_TOKEN in Vercel.
     vercelBlobStorage({

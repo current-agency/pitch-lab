@@ -7,6 +7,7 @@ export const Faqs: CollectionConfig = {
     plural: 'FAQs',
   },
   admin: {
+    group: 'Admin',
     useAsTitle: 'question',
     defaultColumns: ['question', 'order', 'updatedAt'],
     description: 'Frequently asked questions shown on the dashboard FAQs page.',

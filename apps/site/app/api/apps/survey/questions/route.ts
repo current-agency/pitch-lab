@@ -3,8 +3,10 @@
  * Used by the in-site survey at /dashboard/apps/survey.
  */
 import { NextResponse } from 'next/server'
+import { getCmsUrl } from '@repo/env'
+import { createLogger } from '@repo/env'
 
-const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
+const log = createLogger('survey/questions')
 
 function surveyApiHeaders(): Record<string, string> {
   const headers: Record<string, string> = { Accept: 'application/json' }
@@ -15,7 +17,7 @@ function surveyApiHeaders(): Record<string, string> {
 
 export async function GET() {
   try {
-    const base = CMS_URL.replace(/\/$/, '')
+    const base = getCmsUrl()
     let res = await fetch(`${base}/api/platform-survey-questions/grouped`, {
       cache: 'no-store',
       headers: surveyApiHeaders(),
@@ -29,14 +31,14 @@ export async function GET() {
     }
     if (!res.ok) {
       const text = await res.text()
-      console.error('[survey/questions] CMS returned', res.status, text)
+      log.error('CMS returned', res.status, text)
       return NextResponse.json({ sections: [] })
     }
     const data = await res.json()
     return NextResponse.json(data)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
-    console.error('[survey/questions]', message)
+    log.error(message)
     return NextResponse.json({ sections: [] })
   }
 }

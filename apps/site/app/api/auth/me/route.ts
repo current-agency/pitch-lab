@@ -1,33 +1,33 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { getCmsUrl, createLogger } from '@repo/env'
 import { getToken } from '@/lib/auth'
+import { apiError, apiUnauthorized } from '@/lib/api-response'
 
-const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
+const log = createLogger('auth/me')
 
 export async function GET() {
   const cookieStore = await cookies()
   const token = getToken(cookieStore)
   if (!token) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json(apiUnauthorized(), { status: 401 })
   }
 
   try {
-    const res = await fetch(`${CMS_URL}/api/users/me?depth=1`, {
+    const res = await fetch(`${getCmsUrl()}/api/users/me?depth=1`, {
       headers: { Authorization: `JWT ${token}` },
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok) {
       return NextResponse.json(
-        { error: data.message || 'Unauthorized' },
+        apiError((data as { message?: string }).message || 'Unauthorized'),
         { status: res.status },
       )
     }
     return NextResponse.json(data.user)
   } catch (err) {
-    console.error('Me error:', err)
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Failed to fetch user' },
-      { status: 500 },
-    )
+    const message = err instanceof Error ? err.message : 'Failed to fetch user'
+    log.error(message, err)
+    return NextResponse.json(apiError(message), { status: 500 })
   }
 }

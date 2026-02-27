@@ -5,6 +5,7 @@ type UserLike = { userType?: string }
 export const AudiencePokerSubmissions: CollectionConfig = {
   slug: 'audience-poker-submissions',
   admin: {
+    group: 'Submissions & Responses',
     useAsTitle: 'id',
     defaultColumns: ['activity', 'user', 'submittedAt'],
     description: 'Audience Poker submissions (chip allocations per activity).',
@@ -19,7 +20,10 @@ export const AudiencePokerSubmissions: CollectionConfig = {
     read: ({ req }) => {
       const secret = process.env.ACTIVITY_LINK_SECRET
       if (secret && req.headers?.get?.('x-activity-app-secret') === secret) return true
-      return (req.user as UserLike)?.userType === 'admin'
+      const user = req.user as UserLike & { id?: string } | null
+      if (user?.userType === 'admin') return true
+      if (user?.id) return { user: { equals: user.id } }
+      return false
     },
     update: () => false,
     delete: ({ req }) => (req.user as UserLike)?.userType === 'admin',

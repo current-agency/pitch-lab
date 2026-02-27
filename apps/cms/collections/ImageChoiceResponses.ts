@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload'
 export const ImageChoiceResponses: CollectionConfig = {
   slug: 'image-choice-responses',
   admin: {
+    group: 'Submissions & Responses',
     useAsTitle: 'id',
     defaultColumns: ['user', 'assessment', 'completedAt', 'createdAt'],
     description: 'Image choice assessment submissions (pair choices and response times)',
@@ -14,7 +15,12 @@ export const ImageChoiceResponses: CollectionConfig = {
       if (!secret) return true
       return req.headers?.get?.('x-activity-app-secret') === secret
     },
-    read: ({ req }) => (req.user as { userType?: string })?.userType === 'admin',
+    read: ({ req }) => {
+      const user = req.user as { userType?: string; id?: string } | null
+      if (user?.userType === 'admin') return true
+      if (user?.id) return { user: { equals: user.id } }
+      return false
+    },
     update: () => false,
     delete: ({ req }) => (req.user as { userType?: string })?.userType === 'admin',
   },

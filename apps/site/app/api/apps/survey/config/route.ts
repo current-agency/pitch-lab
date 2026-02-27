@@ -3,8 +3,11 @@
  * Query: ?company=COMPANY_ID
  */
 import { NextResponse } from 'next/server'
+import { getCmsUrl } from '@repo/env'
+import { apiError } from '@/lib/api-response'
+import { createLogger } from '@repo/env'
 
-const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
+const log = createLogger('survey/config')
 
 function surveyApiHeaders(): Record<string, string> {
   const headers: Record<string, string> = { Accept: 'application/json' }
@@ -17,19 +20,19 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const company = searchParams.get('company')?.trim()
   if (!company) {
-    return NextResponse.json({ error: 'company query param required' }, { status: 400 })
+    return NextResponse.json(apiError('company query param required'), { status: 400 })
   }
   try {
-    const base = CMS_URL.replace(/\/$/, '')
+    const base = getCmsUrl()
     const res = await fetch(`${base}/api/platform-survey-config?company=${encodeURIComponent(company)}`, {
       cache: 'no-store',
       headers: surveyApiHeaders(),
     })
     if (!res.ok) {
       const text = await res.text()
-      console.error('[survey/config] CMS returned', res.status, text)
+      log.error('CMS returned', res.status, text)
       return NextResponse.json(
-        { error: res.status === 404 ? 'Company not found or survey not enabled' : 'Failed to load survey', details: text },
+        apiError(res.status === 404 ? 'Company not found or survey not enabled' : 'Failed to load survey', text),
         { status: res.status >= 500 ? 502 : res.status }
       )
     }
@@ -37,7 +40,7 @@ export async function GET(request: Request) {
     return NextResponse.json(data)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
-    console.error('[survey/config]', message)
-    return NextResponse.json({ error: 'Failed to load survey', details: message }, { status: 502 })
+    log.error(message)
+    return NextResponse.json(apiError('Failed to load survey', message), { status: 502 })
   }
 }

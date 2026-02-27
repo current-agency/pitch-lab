@@ -14,6 +14,7 @@ export function generateSessionId(): string {
 export const MigrationReviewSession: CollectionConfig = {
   slug: 'migration-review-sessions',
   admin: {
+    group: 'Submissions & Responses',
     useAsTitle: 'email',
     defaultColumns: ['email', 'dataVersion', 'updatedAt'],
     description: 'Content Migration Analyzer review sessions tied to email',

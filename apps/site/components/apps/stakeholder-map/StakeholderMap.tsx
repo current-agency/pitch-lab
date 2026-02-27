@@ -172,15 +172,16 @@ export function StakeholderMap({ activityId }: StakeholderMapProps) {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/apps/stakeholder-map/activity/${encodeURIComponent(activityId)}`, {
-        credentials: 'include',
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setError((data as { error?: string }).error ?? 'Failed to load activity')
+      const [activityRes, submissionRes] = await Promise.all([
+        fetch(`/api/apps/stakeholder-map/activity/${encodeURIComponent(activityId)}`, { credentials: 'include' }),
+        fetch(`/api/apps/stakeholder-map/submission?activity=${encodeURIComponent(activityId)}`, { credentials: 'include' }),
+      ])
+      const activityData = await activityRes.json().catch(() => ({}))
+      if (!activityRes.ok) {
+        setError((activityData as { error?: string }).error ?? 'Failed to load activity')
         return
       }
-      const activity = data as { stakeholders?: Array<{ id: string; name?: string; title?: string | null }> }
+      const activity = activityData as { stakeholders?: Array<{ id: string; name?: string; title?: string | null }> }
       const list = activity.stakeholders ?? []
       const mapped: Stakeholder[] = list.map((s) => ({
         id: String(s.id),
@@ -188,9 +189,24 @@ export function StakeholderMap({ activityId }: StakeholderMapProps) {
         title: s.title ?? null,
       }))
       setStakeholders(mapped)
-      const p: Placement = {}
-      mapped.forEach((s) => (p[s.id] = 'unplaced'))
-      setPlacement(p)
+
+      const submissionData = submissionRes.ok ? await submissionRes.json().catch(() => null) : null
+      const sub = submissionData as { placements?: Array<{ stakeholderId: string; quadrant: string }> } | null
+      if (sub?.placements && Array.isArray(sub.placements) && sub.placements.length > 0) {
+        const p: Placement = {}
+        mapped.forEach((s) => (p[s.id] = 'unplaced'))
+        sub.placements.forEach((pl) => {
+          if (pl.stakeholderId && pl.quadrant && (pl.quadrant === 'key-players' || pl.quadrant === 'keep-satisfied' || pl.quadrant === 'keep-informed' || pl.quadrant === 'monitor')) {
+            p[pl.stakeholderId] = pl.quadrant as QuadrantId
+          }
+        })
+        setPlacement(p)
+        setSubmitted(true)
+      } else {
+        const p: Placement = {}
+        mapped.forEach((s) => (p[s.id] = 'unplaced'))
+        setPlacement(p)
+      }
     } catch {
       setError('Failed to load activity')
     } finally {

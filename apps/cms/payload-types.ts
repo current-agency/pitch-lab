@@ -70,17 +70,17 @@ export interface Config {
     companies: Company;
     users: User;
     media: Media;
-    'image-choice-assessments': ImageChoiceAssessment;
-    'image-choice-responses': ImageChoiceResponse;
-    'audience-poker-activities': AudiencePokerActivity;
-    'audience-poker-submissions': AudiencePokerSubmission;
-    'content-rank': ContentRank;
-    'migration-review-sessions': MigrationReviewSession;
-    'platform-survey-questions': PlatformSurveyQuestion;
-    'platform-survey-responses': PlatformSurveyResponse;
     faqs: Faq;
+    'image-choice-assessments': ImageChoiceAssessment;
+    'audience-poker-activities': AudiencePokerActivity;
+    'content-rank': ContentRank;
+    'platform-survey-questions': PlatformSurveyQuestion;
     'stakeholder-map-activities': StakeholderMapActivity;
+    'image-choice-responses': ImageChoiceResponse;
+    'audience-poker-submissions': AudiencePokerSubmission;
+    'platform-survey-responses': PlatformSurveyResponse;
     'stakeholder-map-submissions': StakeholderMapSubmission;
+    'migration-review-sessions': MigrationReviewSession;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -91,17 +91,17 @@ export interface Config {
     companies: CompaniesSelect<false> | CompaniesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
-    'image-choice-assessments': ImageChoiceAssessmentsSelect<false> | ImageChoiceAssessmentsSelect<true>;
-    'image-choice-responses': ImageChoiceResponsesSelect<false> | ImageChoiceResponsesSelect<true>;
-    'audience-poker-activities': AudiencePokerActivitiesSelect<false> | AudiencePokerActivitiesSelect<true>;
-    'audience-poker-submissions': AudiencePokerSubmissionsSelect<false> | AudiencePokerSubmissionsSelect<true>;
-    'content-rank': ContentRankSelect<false> | ContentRankSelect<true>;
-    'migration-review-sessions': MigrationReviewSessionsSelect<false> | MigrationReviewSessionsSelect<true>;
-    'platform-survey-questions': PlatformSurveyQuestionsSelect<false> | PlatformSurveyQuestionsSelect<true>;
-    'platform-survey-responses': PlatformSurveyResponsesSelect<false> | PlatformSurveyResponsesSelect<true>;
     faqs: FaqsSelect<false> | FaqsSelect<true>;
+    'image-choice-assessments': ImageChoiceAssessmentsSelect<false> | ImageChoiceAssessmentsSelect<true>;
+    'audience-poker-activities': AudiencePokerActivitiesSelect<false> | AudiencePokerActivitiesSelect<true>;
+    'content-rank': ContentRankSelect<false> | ContentRankSelect<true>;
+    'platform-survey-questions': PlatformSurveyQuestionsSelect<false> | PlatformSurveyQuestionsSelect<true>;
     'stakeholder-map-activities': StakeholderMapActivitiesSelect<false> | StakeholderMapActivitiesSelect<true>;
+    'image-choice-responses': ImageChoiceResponsesSelect<false> | ImageChoiceResponsesSelect<true>;
+    'audience-poker-submissions': AudiencePokerSubmissionsSelect<false> | AudiencePokerSubmissionsSelect<true>;
+    'platform-survey-responses': PlatformSurveyResponsesSelect<false> | PlatformSurveyResponsesSelect<true>;
     'stakeholder-map-submissions': StakeholderMapSubmissionsSelect<false> | StakeholderMapSubmissionsSelect<true>;
+    'migration-review-sessions': MigrationReviewSessionsSelect<false> | MigrationReviewSessionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -433,68 +433,25 @@ export interface StakeholderMapActivity {
   createdAt: string;
 }
 /**
- * Image choice assessment submissions (pair choices and response times)
+ * Frequently asked questions shown on the dashboard FAQs page.
  *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "image-choice-responses".
+ * via the `definition` "faqs".
  */
-export interface ImageChoiceResponse {
+export interface Faq {
   id: string;
   /**
-   * User who completed the assessment (when opened from dashboard with token)
+   * The question text
    */
-  user?: (string | null) | User;
+  question: string;
   /**
-   * Assessment that was completed
+   * The answer text
    */
-  assessment: string | ImageChoiceAssessment;
+  answer: string;
   /**
-   * Array of { pairIndex, side: "left"|"right", elapsedMs } per pair
+   * Sort order (lower = first)
    */
-  responses:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  /**
-   * When the assessment was completed
-   */
-  completedAt: string;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Audience Poker submissions (chip allocations per activity).
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "audience-poker-submissions".
- */
-export interface AudiencePokerSubmission {
-  id: string;
-  /**
-   * Activity that was submitted
-   */
-  activity: string | AudiencePokerActivity;
-  /**
-   * User who submitted
-   */
-  user: string | User;
-  /**
-   * Chips allocated per audience (audienceLabel denormalized for reporting)
-   */
-  allocations: {
-    audienceLabel: string;
-    chips: number;
-    id?: string | null;
-  }[];
-  /**
-   * When the submission was made
-   */
-  submittedAt: string;
+  order?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -528,41 +485,6 @@ export interface ContentRank {
    * Token for the Content Rank app to fetch this instance (without CMS login)
    */
   accessToken?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Content Migration Analyzer review sessions tied to email
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "migration-review-sessions".
- */
-export interface MigrationReviewSession {
-  id: string;
-  /**
-   * Email address for this review session
-   */
-  email: string;
-  /**
-   * Unique session ID (used to resume session)
-   */
-  sessionId: string;
-  /**
-   * Migration data version (e.g. FINAL, v2)
-   */
-  dataVersion?: string | null;
-  /**
-   * Saved decisions: groupKey -> { client_decision, notes }
-   */
-  decisions?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -670,6 +592,72 @@ export interface PlatformSurveyQuestion {
   createdAt: string;
 }
 /**
+ * Image choice assessment submissions (pair choices and response times)
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "image-choice-responses".
+ */
+export interface ImageChoiceResponse {
+  id: string;
+  /**
+   * User who completed the assessment (when opened from dashboard with token)
+   */
+  user?: (string | null) | User;
+  /**
+   * Assessment that was completed
+   */
+  assessment: string | ImageChoiceAssessment;
+  /**
+   * Array of { pairIndex, side: "left"|"right", elapsedMs } per pair
+   */
+  responses:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * When the assessment was completed
+   */
+  completedAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Audience Poker submissions (chip allocations per activity).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audience-poker-submissions".
+ */
+export interface AudiencePokerSubmission {
+  id: string;
+  /**
+   * Activity that was submitted
+   */
+  activity: string | AudiencePokerActivity;
+  /**
+   * User who submitted
+   */
+  user: string | User;
+  /**
+   * Chips allocated per audience (audienceLabel denormalized for reporting)
+   */
+  allocations: {
+    audienceLabel: string;
+    chips: number;
+    id?: string | null;
+  }[];
+  /**
+   * When the submission was made
+   */
+  submittedAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Platform Fit Quiz submissions
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -681,6 +669,10 @@ export interface PlatformSurveyResponse {
    * Company this response belongs to, when the survey was taken via ?company= link.
    */
   company?: (string | null) | Company;
+  /**
+   * User who submitted (set automatically when submitted via dashboard).
+   */
+  user?: (string | null) | User;
   /**
    * When the response was submitted
    */
@@ -709,29 +701,6 @@ export interface PlatformSurveyResponse {
    * Time from start to submit in seconds
    */
   completionTime?: number | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Frequently asked questions shown on the dashboard FAQs page.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "faqs".
- */
-export interface Faq {
-  id: string;
-  /**
-   * The question text
-   */
-  question: string;
-  /**
-   * The answer text
-   */
-  answer: string;
-  /**
-   * Sort order (lower = first)
-   */
-  order?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -773,6 +742,41 @@ export interface StakeholderMapSubmission {
   createdAt: string;
 }
 /**
+ * Content Migration Analyzer review sessions tied to email
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "migration-review-sessions".
+ */
+export interface MigrationReviewSession {
+  id: string;
+  /**
+   * Email address for this review session
+   */
+  email: string;
+  /**
+   * Unique session ID (used to resume session)
+   */
+  sessionId: string;
+  /**
+   * Migration data version (e.g. FINAL, v2)
+   */
+  dataVersion?: string | null;
+  /**
+   * Saved decisions: groupKey -> { client_decision, notes }
+   */
+  decisions?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -809,48 +813,48 @@ export interface PayloadLockedDocument {
         value: string | Media;
       } | null)
     | ({
-        relationTo: 'image-choice-assessments';
-        value: string | ImageChoiceAssessment;
+        relationTo: 'faqs';
+        value: string | Faq;
       } | null)
     | ({
-        relationTo: 'image-choice-responses';
-        value: string | ImageChoiceResponse;
+        relationTo: 'image-choice-assessments';
+        value: string | ImageChoiceAssessment;
       } | null)
     | ({
         relationTo: 'audience-poker-activities';
         value: string | AudiencePokerActivity;
       } | null)
     | ({
-        relationTo: 'audience-poker-submissions';
-        value: string | AudiencePokerSubmission;
-      } | null)
-    | ({
         relationTo: 'content-rank';
         value: string | ContentRank;
-      } | null)
-    | ({
-        relationTo: 'migration-review-sessions';
-        value: string | MigrationReviewSession;
       } | null)
     | ({
         relationTo: 'platform-survey-questions';
         value: string | PlatformSurveyQuestion;
       } | null)
     | ({
-        relationTo: 'platform-survey-responses';
-        value: string | PlatformSurveyResponse;
-      } | null)
-    | ({
-        relationTo: 'faqs';
-        value: string | Faq;
-      } | null)
-    | ({
         relationTo: 'stakeholder-map-activities';
         value: string | StakeholderMapActivity;
       } | null)
     | ({
+        relationTo: 'image-choice-responses';
+        value: string | ImageChoiceResponse;
+      } | null)
+    | ({
+        relationTo: 'audience-poker-submissions';
+        value: string | AudiencePokerSubmission;
+      } | null)
+    | ({
+        relationTo: 'platform-survey-responses';
+        value: string | PlatformSurveyResponse;
+      } | null)
+    | ({
         relationTo: 'stakeholder-map-submissions';
         value: string | StakeholderMapSubmission;
+      } | null)
+    | ({
+        relationTo: 'migration-review-sessions';
+        value: string | MigrationReviewSession;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -979,6 +983,17 @@ export interface MediaSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faqs_select".
+ */
+export interface FaqsSelect<T extends boolean = true> {
+  question?: T;
+  answer?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "image-choice-assessments_select".
  */
 export interface ImageChoiceAssessmentsSelect<T extends boolean = true> {
@@ -996,18 +1011,6 @@ export interface ImageChoiceAssessmentsSelect<T extends boolean = true> {
       };
   isActive?: T;
   instructions?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "image-choice-responses_select".
- */
-export interface ImageChoiceResponsesSelect<T extends boolean = true> {
-  user?: T;
-  assessment?: T;
-  responses?: T;
-  completedAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1032,24 +1035,6 @@ export interface AudiencePokerActivitiesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "audience-poker-submissions_select".
- */
-export interface AudiencePokerSubmissionsSelect<T extends boolean = true> {
-  activity?: T;
-  user?: T;
-  allocations?:
-    | T
-    | {
-        audienceLabel?: T;
-        chips?: T;
-        id?: T;
-      };
-  submittedAt?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "content-rank_select".
  */
 export interface ContentRankSelect<T extends boolean = true> {
@@ -1059,18 +1044,6 @@ export interface ContentRankSelect<T extends boolean = true> {
   company?: T;
   isActive?: T;
   accessToken?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "migration-review-sessions_select".
- */
-export interface MigrationReviewSessionsSelect<T extends boolean = true> {
-  email?: T;
-  sessionId?: T;
-  dataVersion?: T;
-  decisions?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1116,36 +1089,6 @@ export interface PlatformSurveyQuestionsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "platform-survey-responses_select".
- */
-export interface PlatformSurveyResponsesSelect<T extends boolean = true> {
-  company?: T;
-  submittedAt?: T;
-  respondent?:
-    | T
-    | {
-        name?: T;
-        email?: T;
-        company?: T;
-      };
-  answers?: T;
-  completionTime?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "faqs_select".
- */
-export interface FaqsSelect<T extends boolean = true> {
-  question?: T;
-  answer?: T;
-  order?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "stakeholder-map-activities_select".
  */
 export interface StakeholderMapActivitiesSelect<T extends boolean = true> {
@@ -1165,6 +1108,56 @@ export interface StakeholderMapActivitiesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "image-choice-responses_select".
+ */
+export interface ImageChoiceResponsesSelect<T extends boolean = true> {
+  user?: T;
+  assessment?: T;
+  responses?: T;
+  completedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audience-poker-submissions_select".
+ */
+export interface AudiencePokerSubmissionsSelect<T extends boolean = true> {
+  activity?: T;
+  user?: T;
+  allocations?:
+    | T
+    | {
+        audienceLabel?: T;
+        chips?: T;
+        id?: T;
+      };
+  submittedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "platform-survey-responses_select".
+ */
+export interface PlatformSurveyResponsesSelect<T extends boolean = true> {
+  company?: T;
+  user?: T;
+  submittedAt?: T;
+  respondent?:
+    | T
+    | {
+        name?: T;
+        email?: T;
+        company?: T;
+      };
+  answers?: T;
+  completionTime?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "stakeholder-map-submissions_select".
  */
 export interface StakeholderMapSubmissionsSelect<T extends boolean = true> {
@@ -1178,6 +1171,18 @@ export interface StakeholderMapSubmissionsSelect<T extends boolean = true> {
         quadrant?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "migration-review-sessions_select".
+ */
+export interface MigrationReviewSessionsSelect<T extends boolean = true> {
+  email?: T;
+  sessionId?: T;
+  dataVersion?: T;
+  decisions?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -5,6 +5,7 @@ type UserLike = { userType?: string }
 export const StakeholderMapActivities: CollectionConfig = {
   slug: 'stakeholder-map-activities',
   admin: {
+    group: 'Apps',
     useAsTitle: 'title',
     defaultColumns: ['title', 'company', 'isActive', 'updatedAt'],
     description:

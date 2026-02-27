@@ -3,6 +3,6 @@ import { requireAuth } from '@/lib/auth'
 import SurveyClient from './SurveyClient'
 
 export default async function SurveyPage() {
-  await requireAuth(await cookies())
+  requireAuth(await cookies())
   return <SurveyClient />
 }

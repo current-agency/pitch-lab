@@ -5,6 +5,7 @@ type UserLike = { userType?: string }
 export const ImageChoiceAssessments: CollectionConfig = {
   slug: 'image-choice-assessments',
   admin: {
+    group: 'Apps',
     useAsTitle: 'title',
     defaultColumns: ['title', 'duration', 'isActive', 'updatedAt'],
   },

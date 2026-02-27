@@ -9,6 +9,10 @@ export default {
   ],
   theme: {
   	extend: {
+  		fontFamily: {
+  			sans: ['Aeonik', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+  			mono: ['Aeonik Fono', 'ui-monospace', 'monospace'],
+  		},
   		colors: {
   			sidebar: {
   				DEFAULT: 'hsl(var(--sidebar-background))',

@@ -46,16 +46,25 @@ function SurveyClientContent() {
 
     if (companyId) {
       const configUrl = `/api/apps/survey/config?company=${encodeURIComponent(companyId)}`
+      const submissionUrl = `/api/apps/survey/submission?company=${encodeURIComponent(companyId)}`
       Promise.all([
         fetch(configUrl, fetchOpts).then((res) => (res.ok ? res.json() : Promise.resolve(null))),
+        fetch(submissionUrl, fetchOpts).then((res) => (res.ok ? res.json() : Promise.resolve(null))),
         loadQuestions(),
       ])
-        .then(([config]) => {
+        .then(([config, existingResponse]) => {
           if (cancelled) return
           if (config && typeof (config as { title?: string }).title === 'string') {
             setTitle((config as { title: string }).title)
           }
-          setStartTime(Date.now())
+          const resp = existingResponse as { answers?: SurveyAnswers } | null
+          if (resp?.answers && typeof resp.answers === 'object' && Object.keys(resp.answers).length > 0) {
+            setAnswers(resp.answers)
+            setRecommendations(computeRecommendation(resp.answers))
+            setStep('thankyou')
+          } else {
+            setStartTime(Date.now())
+          }
         })
         .catch((err) => {
           if (!cancelled) setError(err instanceof Error ? err.message : String(err))

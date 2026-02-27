@@ -14,7 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 
-const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
+import { getCmsUrl } from '@repo/env'
 
 type FaqItem = {
   id: string
@@ -27,12 +27,13 @@ export default async function FAQsPage() {
   const cookieStore = await cookies()
   const { token } = requireAuth(cookieStore)
 
+  const base = getCmsUrl()
   const [userRes, faqsRes] = await Promise.all([
-    fetch(`${CMS_URL}/api/users/me?depth=0`, {
+    fetch(`${base}/api/users/me?depth=0`, {
       headers: { Authorization: `JWT ${token}` },
       next: { revalidate: 0 },
     }),
-    fetch(`${CMS_URL}/api/faqs?sort=order&limit=100`, { next: { revalidate: 60 } }),
+    fetch(`${base}/api/faqs?sort=order&limit=100`, { next: { revalidate: 60 } }),
   ])
 
   const userData = await userRes.json().catch(() => ({}))

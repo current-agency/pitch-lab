@@ -1,18 +1,21 @@
 /**
  * Forwards survey submissions to the CMS (platform-survey-responses).
- * Uses cookie JWT; company is derived from the authenticated user.
+ * Company is always derived from the authenticated user; body.company is ignored.
  */
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { getCmsUrl } from '@repo/env'
 import { getToken } from '@/lib/auth'
+import { apiError, apiUnauthorized } from '@/lib/api-response'
+import { createLogger } from '@repo/env'
 
-const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
+const log = createLogger('survey/responses')
 
 export async function POST(request: Request) {
   const cookieStore = await cookies()
   const token = getToken(cookieStore)
   if (!token) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json(apiUnauthorized(), { status: 401 })
   }
 
   try {
@@ -20,26 +23,24 @@ export async function POST(request: Request) {
       respondent?: { name?: string; email?: string; company?: string }
       answers: Record<string, unknown>
       completionTime?: number
-      company?: string
     }
 
-    const base = CMS_URL.replace(/\/$/, '')
+    const base = getCmsUrl()
     const meRes = await fetch(`${base}/api/users/me?depth=1`, {
       headers: { Authorization: `JWT ${token}` },
       cache: 'no-store',
     })
     if (!meRes.ok) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json(apiUnauthorized(), { status: 401 })
     }
     const meData = await meRes.json().catch(() => ({}))
     const user = meData.user as { company?: string | { id: string } } | undefined
     const companyId =
-      body.company ??
-      (typeof user?.company === 'object' && user?.company?.id
+      typeof user?.company === 'object' && user?.company?.id
         ? user.company.id
         : typeof user?.company === 'string'
           ? user.company
-          : null)
+          : null
 
     const res = await fetch(`${base}/api/platform-survey-responses`, {
       method: 'POST',
@@ -58,9 +59,9 @@ export async function POST(request: Request) {
 
     if (!res.ok) {
       const text = await res.text()
-      console.error('[survey/responses] CMS returned', res.status, text)
+      log.error('CMS returned', res.status, text)
       return NextResponse.json(
-        { error: 'Failed to save response', details: text },
+        apiError('Failed to save response', text),
         { status: res.status >= 500 ? 502 : res.status }
       )
     }
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
     return NextResponse.json(data)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
-    console.error('[survey/responses]', message)
-    return NextResponse.json({ error: 'Failed to save response', details: message }, { status: 502 })
+    log.error(message)
+    return NextResponse.json(apiError('Failed to save response', message), { status: 502 })
   }
 }

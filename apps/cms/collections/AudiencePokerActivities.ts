@@ -10,6 +10,7 @@ function minChipBudgetForAudiences(n: number): number {
 export const AudiencePokerActivities: CollectionConfig = {
   slug: 'audience-poker-activities',
   admin: {
+    group: 'Apps',
     useAsTitle: 'title',
     defaultColumns: ['title', 'chipBudget', 'updatedAt'],
     description: 'Audience Poker activities: users allocate a chip budget across audiences (unique allocations, no ties).',

@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { getCmsUrl } from '@repo/env'
 import { getToken } from '@/lib/auth'
+import { isAssigned } from '@/lib/assigned-apps'
+import { apiError, apiUnauthorized } from '@/lib/api-response'
+import { createLogger } from '@repo/env'
 
-const CMS_URL = process.env.CMS_URL || 'http://localhost:3001'
+const log = createLogger('stakeholder-map/submit')
 
 type Placement = { stakeholderId: string; quadrant: string }
 
@@ -10,34 +14,38 @@ export async function POST(request: Request) {
   const cookieStore = await cookies()
   const token = getToken(cookieStore)
   if (!token) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json(apiUnauthorized(), { status: 401 })
   }
 
   let body: { activity?: string; placements?: Placement[] }
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    return NextResponse.json(apiError('Invalid JSON'), { status: 400 })
   }
 
   const { activity: activityId, placements } = body ?? {}
   if (!activityId || !Array.isArray(placements)) {
     return NextResponse.json(
-      { error: 'activity and placements (array) required' },
+      apiError('activity and placements (array) required'),
       { status: 400 },
     )
   }
 
-  // Resolve current user id from CMS
-  const meRes = await fetch(`${CMS_URL}/api/users/me?depth=0`, {
+  const base = getCmsUrl()
+  const meRes = await fetch(`${base}/api/users/me?depth=2`, {
     headers: { Authorization: `JWT ${token}` },
     next: { revalidate: 0 },
   })
   const meData = await meRes.json().catch(() => ({}))
-  if (!meRes.ok || !(meData as { user?: { id?: string } }).user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const user = (meData as { user?: { id?: string; assignedApplications?: unknown[] } }).user
+  const userId = user?.id
+  if (!meRes.ok || !userId) {
+    return NextResponse.json(apiUnauthorized(), { status: 401 })
   }
-  const userId = (meData as { user: { id: string } }).user.id
+  if (!isAssigned(user, 'stakeholder-map-activities', activityId)) {
+    return NextResponse.json(apiError('You do not have access to this activity'), { status: 403 })
+  }
 
   const payload = {
     activity: activityId,
@@ -47,7 +55,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const res = await fetch(`${CMS_URL}/api/stakeholder-map-submissions`, {
+    const res = await fetch(`${base}/api/stakeholder-map-submissions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -58,17 +66,13 @@ export async function POST(request: Request) {
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok) {
-      return NextResponse.json(
-        {
-          error:
-            (data as { errors?: { message?: string }[] })?.errors?.[0]?.message ?? 'Failed to save submission',
-        },
-        { status: res.status >= 500 ? 502 : res.status },
-      )
+      const msg = (data as { errors?: { message?: string }[] })?.errors?.[0]?.message ?? 'Failed to save submission'
+      log.error('CMS submit', res.status, msg)
+      return NextResponse.json(apiError(msg), { status: res.status >= 500 ? 502 : res.status })
     }
     return NextResponse.json(data)
   } catch (err) {
-    console.error('[site /api/apps/stakeholder-map/submit]', err)
-    return NextResponse.json({ error: 'Failed to save submission' }, { status: 502 })
+    log.error(err)
+    return NextResponse.json(apiError('Failed to save submission'), { status: 502 })
   }
 }

@@ -35,6 +35,7 @@ export const PlatformSurveyQuestions: CollectionConfig = {
   slug: 'platform-survey-questions',
   defaultSort: ['sectionSortOrder', 'order'],
   admin: {
+    group: 'Apps',
     useAsTitle: 'questionKey',
     defaultColumns: ['section', 'order', 'questionKey', 'inputType', 'isActive'],
     description: 'Platform Fit Quiz questions. Ordered by section then order.',

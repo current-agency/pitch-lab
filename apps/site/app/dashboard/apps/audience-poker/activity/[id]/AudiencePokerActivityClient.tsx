@@ -9,12 +9,17 @@ import { instructionsToText } from '@/components/apps/audience-poker/types'
 
 const API = {
   activity: (id: string) => `/api/apps/audience-poker/activity/${id}`,
+  submission: (id: string) => `/api/apps/audience-poker/submission?activity=${encodeURIComponent(id)}`,
   submit: '/api/apps/audience-poker/submit',
 }
 
 export function AudiencePokerActivityClient({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [activity, setActivity] = useState<AudiencePokerActivity | null>(null)
+  const [existingSubmission, setExistingSubmission] = useState<{
+    allocations: { audienceLabel: string; chips: number }[]
+    submittedAt?: string
+  } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [allocations, setAllocations] = useState<number[]>([])
@@ -26,15 +31,25 @@ export function AudiencePokerActivityClient({ params }: { params: Promise<{ id: 
   useEffect(() => {
     setLoading(true)
     setError(null)
-    fetch(API.activity(id), { credentials: 'include' })
-      .then((res) => {
+    Promise.all([
+      fetch(API.activity(id), { credentials: 'include' }).then((res) => {
         if (!res.ok) throw new Error(res.status === 404 ? 'Activity not found' : res.statusText)
         return res.json()
-      })
-      .then((data: AudiencePokerActivity) => {
-        setActivity(data)
-        const n = (data.audiences || []).length
-        setAllocations(n ? Array(n).fill(0) : [])
+      }),
+      fetch(API.submission(id), { credentials: 'include' }).then((res) => (res.ok ? res.json() : null)),
+    ])
+      .then(([activityData, submissionData]) => {
+        setActivity(activityData as AudiencePokerActivity)
+        const sub = submissionData as { allocations?: { audienceLabel: string; chips: number }[]; submittedAt?: string } | null
+        if (sub && Array.isArray(sub.allocations) && sub.allocations.length > 0) {
+          setExistingSubmission({
+            allocations: sub.allocations,
+            submittedAt: sub.submittedAt,
+          })
+        } else {
+          const n = ((activityData as AudiencePokerActivity).audiences || []).length
+          setAllocations(n ? Array(n).fill(0) : [])
+        }
       })
       .catch((err) => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setLoading(false))
@@ -123,16 +138,40 @@ export function AudiencePokerActivityClient({ params }: { params: Promise<{ id: 
     )
   }
 
-  if (submitted) {
+  if (submitted || existingSubmission) {
+    const allocationsToShow = existingSubmission?.allocations ?? (activity?.audiences || []).map((aud, i) => ({
+      audienceLabel: typeof aud === 'object' ? aud.label : `Audience ${i + 1}`,
+      chips: allocations[i] ?? 0,
+    }))
+    const submittedAt = existingSubmission?.submittedAt
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="mx-auto max-w-md rounded-xl bg-white p-8 text-center shadow-sm">
-          <h2 className="text-xl font-bold text-slate-900">Your chips are in.</h2>
-          <p className="mt-2 text-slate-600">Thanks for participating.</p>
-          <Link href="/dashboard" className="mt-6 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-            ← Back to dashboard
-          </Link>
+      <div className="mx-auto max-w-2xl">
+        <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+          ← Back to dashboard
+        </Link>
+        <h1 className="text-2xl font-bold text-slate-900">{activity?.title ?? 'Audience Poker'}</h1>
+        <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
+          <p className="font-semibold">Your submission</p>
+          {submittedAt ? (
+            <p className="mt-1 text-sm">Submitted {new Date(submittedAt).toLocaleDateString()}</p>
+          ) : (
+            <p className="mt-1 text-sm">Thanks for participating.</p>
+          )}
         </div>
+        <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {(allocationsToShow ?? []).map((item, index) => (
+            <li
+              key={index}
+              className="flex flex-col rounded-2xl border-2 border-slate-200 bg-white p-5 shadow-sm"
+            >
+              <h3 className="font-semibold text-slate-900">{item.audienceLabel}</h3>
+              <p className="mt-2 text-xl font-bold tabular-nums text-slate-900">{item.chips} chips</p>
+            </li>
+          ))}
+        </ul>
+        <Link href="/dashboard" className="mt-8 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+          ← Back to dashboard
+        </Link>
       </div>
     )
   }

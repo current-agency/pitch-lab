@@ -10,12 +10,18 @@ const QUADRANT_OPTIONS = [
 export const StakeholderMapSubmissions: CollectionConfig = {
   slug: 'stakeholder-map-submissions',
   admin: {
+    group: 'Submissions & Responses',
     useAsTitle: 'submittedBy',
     defaultColumns: ['activity', 'submittedBy', 'submittedAt'],
     description: 'Stakeholder Map submissions: placements of stakeholders in the 2×2 matrix.',
   },
   access: {
-    read: ({ req }) => Boolean(req.user),
+    read: ({ req }) => {
+      const user = req.user as { userType?: string; id?: string } | null
+      if (user?.userType === 'admin') return true
+      if (user?.id) return { submittedBy: { equals: user.id } }
+      return false
+    },
     create: ({ req }) => {
       if (req.user) return true
       const secret = process.env.ACTIVITY_LINK_SECRET

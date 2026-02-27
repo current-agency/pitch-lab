@@ -2,8 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Aeonik (sans-serif) – copy "Aeonik Essentials Website" into public/fonts/aeonik/ */
+@font-face {
+  font-family: 'Aeonik';
+  src: url('/fonts/aeonik/Aeonik-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Aeonik';
+  src: url('/fonts/aeonik/Aeonik-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Aeonik';
+  src: url('/fonts/aeonik/Aeonik-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Aeonik Fono (monospace) – copy "Aeonik Fono Essentials Website" into public/fonts/aeonik-fono/ */
+@font-face {
+  font-family: 'Aeonik Fono';
+  src: url('/fonts/aeonik-fono/AeonikFono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Aeonik Fono';
+  src: url('/fonts/aeonik-fono/AeonikFono-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Aeonik Fono';
+  src: url('/fonts/aeonik-fono/AeonikFono-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 body {
-  @apply bg-white text-slate-900 antialiased;
+  @apply bg-white text-slate-900 antialiased font-sans;
 }
 
 
