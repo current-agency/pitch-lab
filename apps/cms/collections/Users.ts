@@ -80,10 +80,10 @@ export const Users: CollectionConfig = {
     {
       name: 'assignedApplications',
       type: 'relationship',
-      relationTo: ['image-choice-assessments', 'audience-poker-activities', 'stakeholder-map-activities', 'platform-survey-assignments'],
+      relationTo: ['image-choice-assessments', 'audience-poker-activities', 'stakeholder-map-activities'],
       hasMany: true,
       admin: {
-        description: 'Activities and apps this user can access: Image choice, Audience Poker, Stakeholder Map, Platform Fit Quiz (survey). Only admins can edit.',
+        description: 'Activities this user can access: Image choice, Audience Poker, Stakeholder Map. Only admins can edit.',
       },
       access: {
         read: ({ req, doc }) => {
@@ -95,6 +95,18 @@ export const Users: CollectionConfig = {
         },
         create: ({ req }) => (req.user as { userType?: string })?.userType === 'admin',
         update: ({ req }) => (req.user as { userType?: string })?.userType === 'admin',
+      },
+    },
+    {
+      name: 'platformSurveyEnabled',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'When enabled, this user sees the Platform Fit Quiz (survey) on their dashboard. There is only one survey; no need to create instances.',
+      },
+      access: {
+        update: ({ req }) => (req.user as { userType?: string })?.userType === 'admin',
+        create: ({ req }) => (req.user as { userType?: string })?.userType === 'admin',
       },
     },
     {

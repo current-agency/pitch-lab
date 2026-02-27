@@ -76,7 +76,6 @@ export interface Config {
     'audience-poker-submissions': AudiencePokerSubmission;
     'content-rank': ContentRank;
     'migration-review-sessions': MigrationReviewSession;
-    'platform-survey-assignments': PlatformSurveyAssignment;
     'platform-survey-questions': PlatformSurveyQuestion;
     'platform-survey-responses': PlatformSurveyResponse;
     faqs: Faq;
@@ -98,7 +97,6 @@ export interface Config {
     'audience-poker-submissions': AudiencePokerSubmissionsSelect<false> | AudiencePokerSubmissionsSelect<true>;
     'content-rank': ContentRankSelect<false> | ContentRankSelect<true>;
     'migration-review-sessions': MigrationReviewSessionsSelect<false> | MigrationReviewSessionsSelect<true>;
-    'platform-survey-assignments': PlatformSurveyAssignmentsSelect<false> | PlatformSurveyAssignmentsSelect<true>;
     'platform-survey-questions': PlatformSurveyQuestionsSelect<false> | PlatformSurveyQuestionsSelect<true>;
     'platform-survey-responses': PlatformSurveyResponsesSelect<false> | PlatformSurveyResponsesSelect<true>;
     faqs: FaqsSelect<false> | FaqsSelect<true>;
@@ -184,7 +182,7 @@ export interface User {
    */
   company: string | Company;
   /**
-   * Activities and apps this user can access: Image choice, Audience Poker, Stakeholder Map, Platform Fit Quiz (survey). Only admins can edit.
+   * Activities this user can access: Image choice, Audience Poker, Stakeholder Map. Only admins can edit.
    */
   assignedApplications?:
     | (
@@ -200,12 +198,12 @@ export interface User {
             relationTo: 'stakeholder-map-activities';
             value: string | StakeholderMapActivity;
           }
-        | {
-            relationTo: 'platform-survey-assignments';
-            value: string | PlatformSurveyAssignment;
-          }
       )[]
     | null;
+  /**
+   * When enabled, this user sees the Platform Fit Quiz (survey) on their dashboard. There is only one survey; no need to create instances.
+   */
+  platformSurveyEnabled?: boolean | null;
   /**
    * Whether this user account is active
    */
@@ -431,21 +429,6 @@ export interface StakeholderMapActivity {
    * Inactive activities are hidden from assignment lists
    */
   isActive?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Assign the Platform Fit Quiz to users via the User’s Assigned applications field.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "platform-survey-assignments".
- */
-export interface PlatformSurveyAssignment {
-  id: string;
-  /**
-   * Label shown on the dashboard card (e.g. Platform Fit Quiz).
-   */
-  title: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -850,10 +833,6 @@ export interface PayloadLockedDocument {
         value: string | MigrationReviewSession;
       } | null)
     | ({
-        relationTo: 'platform-survey-assignments';
-        value: string | PlatformSurveyAssignment;
-      } | null)
-    | ({
         relationTo: 'platform-survey-questions';
         value: string | PlatformSurveyQuestion;
       } | null)
@@ -936,6 +915,7 @@ export interface UsersSelect<T extends boolean = true> {
   userType?: T;
   company?: T;
   assignedApplications?: T;
+  platformSurveyEnabled?: T;
   isActive?: T;
   lastLoginAt?: T;
   updatedAt?: T;
@@ -1091,15 +1071,6 @@ export interface MigrationReviewSessionsSelect<T extends boolean = true> {
   sessionId?: T;
   dataVersion?: T;
   decisions?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "platform-survey-assignments_select".
- */
-export interface PlatformSurveyAssignmentsSelect<T extends boolean = true> {
-  title?: T;
   updatedAt?: T;
   createdAt?: T;
 }

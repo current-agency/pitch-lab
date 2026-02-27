@@ -13,7 +13,6 @@ import { AudiencePokerActivities } from './collections/AudiencePokerActivities'
 import { AudiencePokerSubmissions } from './collections/AudiencePokerSubmissions'
 import { Media } from './collections/Media'
 import { MigrationReviewSession, generateSessionId } from './collections/MigrationReviewSession'
-import { PlatformSurveyAssignments } from './collections/PlatformSurveyAssignments'
 import { PlatformSurveyQuestions } from './collections/PlatformSurveyQuestions'
 import { PlatformSurveyResponses } from './collections/PlatformSurveyResponses'
 import { Users } from './collections/Users'
@@ -320,7 +319,7 @@ export default buildConfig({
     // Avoid hydration warnings when browser extensions (e.g. cz-shortcut-listen) modify <body>
     suppressHydrationWarning: true,
   },
-  collections: [Companies, Users, Media, ImageChoiceAssessments, ImageChoiceResponses, AudiencePokerActivities, AudiencePokerSubmissions, ContentRank, MigrationReviewSession, PlatformSurveyAssignments, PlatformSurveyQuestions, PlatformSurveyResponses, Faqs, StakeholderMapActivities, StakeholderMapSubmissions],
+  collections: [Companies, Users, Media, ImageChoiceAssessments, ImageChoiceResponses, AudiencePokerActivities, AudiencePokerSubmissions, ContentRank, MigrationReviewSession, PlatformSurveyQuestions, PlatformSurveyResponses, Faqs, StakeholderMapActivities, StakeholderMapSubmissions],
   plugins: [
     // Use Vercel Blob in production so uploads work (serverless filesystem is read-only). Set BLOB_READ_WRITE_TOKEN in Vercel.
     vercelBlobStorage({
