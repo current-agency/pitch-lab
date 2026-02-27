@@ -7,7 +7,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "next build",
+    "build": "payload generate:importmap && next build",
     "dev": "next dev --port 3001",
     "lint": "next lint",
     "start": "next start --port 3001",
