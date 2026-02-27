@@ -80,10 +80,10 @@ export const Users: CollectionConfig = {
     {
       name: 'assignedApplications',
       type: 'relationship',
-      relationTo: ['image-choice-assessments', 'audience-poker-activities', 'stakeholder-map-activities'],
+      relationTo: ['image-choice-assessments', 'audience-poker-activities', 'stakeholder-map-activities', 'platform-survey-assignments'],
       hasMany: true,
       admin: {
-        description: 'Image choice, Audience Poker, and Stakeholder Map activities this user can access. Only admins can edit.',
+        description: 'Activities and apps this user can access: Image choice, Audience Poker, Stakeholder Map, Platform Fit Quiz (survey). Only admins can edit.',
       },
       access: {
         read: ({ req, doc }) => {

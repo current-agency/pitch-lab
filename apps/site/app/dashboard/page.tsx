@@ -31,11 +31,17 @@ type AssignedStakeholderMapActivity = {
   company?: string | { id: string } | null
 }
 
+type AssignedPlatformSurvey = {
+  id: string
+  title?: string | null
+}
+
 /** Polymorphic assignedApplications: array of { relationTo, value } from Payload */
 type PolymorphicAssignment =
   | { relationTo: 'image-choice-assessments'; value: string | AssignedAssessment }
   | { relationTo: 'audience-poker-activities'; value: string | AssignedAudiencePokerActivity }
   | { relationTo: 'stakeholder-map-activities'; value: string | AssignedStakeholderMapActivity }
+  | { relationTo: 'platform-survey-assignments'; value: string | AssignedPlatformSurvey }
 
 type ContentRankInstance = {
   id: string
@@ -69,9 +75,10 @@ function toContentRankCard(instance: ContentRankInstance): CardData {
   }
 }
 
-function toSurveyCard(companyId: string): CardData {
+function toSurveyCard(companyId: string, assignment?: AssignedPlatformSurvey): CardData {
+  const title = assignment && typeof assignment === 'object' && assignment.title ? assignment.title : 'Platform Fit Quiz'
   return {
-    title: 'Platform Fit Quiz',
+    title,
     link: `/dashboard/apps/survey?company=${encodeURIComponent(companyId)}`,
     background: SURVEY_BACKGROUND,
     stats: [{ number: 'Survey', text: 'Platform Fit Quiz: answer questions to get a platform recommendation' }],
@@ -137,8 +144,11 @@ export default async function DashboardPage() {
   const contentRankData = await contentRankRes.json().catch(() => ({ docs: [] }))
   const contentRanks = (contentRankData.docs ?? []) as ContentRankInstance[]
 
+  const userCompany = user?.company
+  const companyId = typeof userCompany === 'object' && userCompany?.id ? userCompany.id : typeof userCompany === 'string' ? userCompany : null
+
   const applicationCards: CardData[] = assigned
-    .filter((a): a is PolymorphicAssignment | string | AssignedAssessment | AssignedAudiencePokerActivity | AssignedStakeholderMapActivity => !!a)
+    .filter((a): a is PolymorphicAssignment | string | AssignedAssessment | AssignedAudiencePokerActivity | AssignedStakeholderMapActivity | AssignedPlatformSurvey => !!a)
     .flatMap((a) => {
       const polymorphic = a as PolymorphicAssignment
       if (typeof polymorphic === 'object' && 'relationTo' in polymorphic && polymorphic.value != null) {
@@ -151,6 +161,9 @@ export default async function DashboardPage() {
         if (polymorphic.relationTo === 'stakeholder-map-activities') {
           return [toStakeholderMapCard(polymorphic.value as AssignedStakeholderMapActivity)]
         }
+        if (polymorphic.relationTo === 'platform-survey-assignments' && companyId) {
+          return [toSurveyCard(companyId, polymorphic.value as AssignedPlatformSurvey)]
+        }
       }
       // Legacy: plain ID or populated image-choice doc (no relationTo)
       const legacy = a as string | AssignedAssessment
@@ -158,15 +171,9 @@ export default async function DashboardPage() {
     })
   const contentRankCards = contentRanks.map((c) => toContentRankCard(c))
 
-  const userCompany = user?.company
-  const companyId = typeof userCompany === 'object' && userCompany?.id ? userCompany.id : typeof userCompany === 'string' ? userCompany : null
-  const surveyEnabled = typeof userCompany === 'object' && userCompany?.platformSurveyEnabled === true
-  const surveyCard = companyId && surveyEnabled ? toSurveyCard(companyId) : null
-
   const cards: CardData[] = [
     ...applicationCards,
     ...contentRankCards,
-    ...(surveyCard ? [surveyCard] : []),
   ]
 
   return (
