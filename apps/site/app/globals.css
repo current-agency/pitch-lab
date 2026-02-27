@@ -73,13 +73,13 @@ body {
 
     --sidebar-ring: oklch(0 0 0);
 
-    --background: oklch(0.9900 0 0);
+    --background: #E7E8E3);
 
-    --foreground: oklch(0 0 0);
+    --foreground: #2C2C2C;
 
-    --card: oklch(1 0 0);
+    --card: #FFFFFF;
 
-    --card-foreground: oklch(0 0 0);
+    --card-foreground: #FFFFFF;
 
     --popover: oklch(0.9900 0 0);
 
@@ -274,8 +274,8 @@ body {
 
     --shadow-2xl: 0px 1px 2px 0px hsl(0 0% 0% / 0.45)}
   .theme {
-    --font-sans: Geist, sans-serif;
-    --font-mono: Geist Mono, monospace;
+    --font-sans: 'Aeonik';
+    --font-mono: 'Aeonik Fono';
     --font-serif: Georgia, serif;
     --radius: 0.5rem;
     --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
