@@ -736,6 +736,10 @@ export interface StakeholderMapSubmission {
      * Quadrant in the matrix
      */
     quadrant: 'key-players' | 'keep-satisfied' | 'keep-informed' | 'monitor';
+    /**
+     * Optional notes about this stakeholder
+     */
+    notes?: string | null;
     id?: string | null;
   }[];
   updatedAt: string;
@@ -1169,6 +1173,7 @@ export interface StakeholderMapSubmissionsSelect<T extends boolean = true> {
     | {
         stakeholderId?: T;
         quadrant?: T;
+        notes?: T;
         id?: T;
       };
   updatedAt?: T;

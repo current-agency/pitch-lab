@@ -1,3 +1,4 @@
+import { DashboardBackBanner } from '@/components/dashboard-back-banner'
 import { BugReportFab } from '@/components/bug-report-fab'
 
 export default function DashboardAppsLayout({
@@ -7,6 +8,7 @@ export default function DashboardAppsLayout({
 }) {
   return (
     <>
+      <DashboardBackBanner />
       {children}
       <BugReportFab />
     </>

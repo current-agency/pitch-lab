@@ -1,20 +1,5 @@
 'use client'
 
-import {
-  DndContext,
-  DragOverlay,
-  KeyboardSensor,
-  PointerSensor,
-  useDraggable,
-  useDroppable,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
-} from '@dnd-kit/core'
-import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 
 const QUADRANTS = [
@@ -32,139 +17,40 @@ export type Stakeholder = {
   title?: string | null
 }
 
-type Placement = Record<string, QuadrantId | 'unplaced'>
+type ScaleValue = 'low' | 'medium' | 'high'
+
+type Answer = {
+  influence: ScaleValue | null
+  interest: ScaleValue | null
+  notes: string
+}
+
+function answerToQuadrant(influence: ScaleValue, interest: ScaleValue): QuadrantId {
+  const highOrMidInfluence = influence === 'high' || influence === 'medium'
+  const highOrMidInterest = interest === 'high' || interest === 'medium'
+  if (highOrMidInfluence && highOrMidInterest) return 'key-players'
+  if (highOrMidInfluence && interest === 'low') return 'keep-satisfied'
+  if (influence === 'low' && highOrMidInterest) return 'keep-informed'
+  return 'monitor'
+}
 
 type StakeholderMapProps = {
   activityId: string
 }
 
-function StakeholderChip({
-  stakeholder,
-  isPlaced,
-  isDragging,
-}: {
-  stakeholder: Stakeholder
-  isPlaced: boolean
-  isDragging?: boolean
-}) {
-  return (
-    <div
-      className={`
-        flex flex-col rounded-lg border px-3 py-2 text-left text-sm shadow-sm transition
-        ${isPlaced ? 'border-slate-300 bg-white' : 'border-slate-400 bg-slate-100'}
-        ${isDragging ? 'opacity-50' : ''}
-      `}
-    >
-      <span className="font-medium text-slate-900">{stakeholder.name}</span>
-      {stakeholder.title ? (
-        <span className="text-xs text-slate-600">{stakeholder.title}</span>
-      ) : null}
-    </div>
-  )
-}
-
-function DraggableChip({
-  id,
-  stakeholder,
-  isPlaced,
-}: {
-  id: string
-  stakeholder: Stakeholder
-  isPlaced: boolean
-}) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id,
-    data: { stakeholder },
-  })
-  const style = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
-    : undefined
-  return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
-      <StakeholderChip stakeholder={stakeholder} isPlaced={isPlaced} isDragging={isDragging} />
-    </div>
-  )
-}
-
-function SortableChip({
-  id,
-  stakeholder,
-  isPlaced,
-}: {
-  id: string
-  stakeholder: Stakeholder
-  isPlaced: boolean
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id,
-    data: { stakeholder },
-  })
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
-  return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
-      <StakeholderChip stakeholder={stakeholder} isPlaced={isPlaced} isDragging={isDragging} />
-    </div>
-  )
-}
-
-function DroppableSidebar({ children }: { children: React.ReactNode }) {
-  const { setNodeRef, isOver } = useDroppable({ id: 'unplaced' })
-  return (
-    <div
-      ref={setNodeRef}
-      className={`flex-1 overflow-y-auto p-3 transition ${isOver ? 'ring-2 ring-inset ring-slate-400 rounded-lg' : ''}`}
-    >
-      {children}
-    </div>
-  )
-}
-
-function DroppableQuadrant({
-  quadrant,
-  stakeholders,
-  placement,
-  getStakeholder,
-}: {
-  quadrant: (typeof QUADRANTS)[number]
-  stakeholders: Stakeholder[]
-  placement: Placement
-  getStakeholder: (id: string) => Stakeholder | undefined
-}) {
-  const { setNodeRef, isOver } = useDroppable({ id: quadrant.id })
-  const idsInQuadrant = stakeholders
-    .filter((s) => placement[s.id] === quadrant.id)
-    .map((s) => s.id)
-  return (
-    <div
-      ref={setNodeRef}
-      className={`min-h-[140px] rounded-xl border-2 p-4 transition ${quadrant.className} ${
-        isOver ? 'ring-2 ring-slate-400 ring-offset-2' : ''
-      }`}
-    >
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
-        {quadrant.label}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {idsInQuadrant.map((id) => {
-          const s = getStakeholder(id)
-          return s ? <DraggableChip key={id} id={id} stakeholder={s} isPlaced /> : null
-        })}
-      </div>
-    </div>
-  )
-}
+const INTRO_COPY =
+  'Who decides, who influences, and who needs to stay in the loop? Mapping stakeholders by influence and interest helps you communicate in the right way with each person.'
 
 export function StakeholderMap({ activityId }: StakeholderMapProps) {
   const [stakeholders, setStakeholders] = useState<Stakeholder[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [placement, setPlacement] = useState<Placement>({})
-  const [activeId, setActiveId] = useState<string | null>(null)
+  const [answers, setAnswers] = useState<Record<string, Answer>>({})
+  const [step, setStep] = useState<'intro' | 'cards' | 'reveal' | 'submitted'>('intro')
+  const [cardIndex, setCardIndex] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [placementForReveal, setPlacementForReveal] = useState<Record<string, QuadrantId>>({})
   const [submitted, setSubmitted] = useState(false)
 
   const fetchActivity = useCallback(async () => {
@@ -193,19 +79,28 @@ export function StakeholderMap({ activityId }: StakeholderMapProps) {
       const submissionData = submissionRes.ok ? await submissionRes.json().catch(() => null) : null
       const sub = submissionData as { placements?: Array<{ stakeholderId: string; quadrant: string }> } | null
       if (sub?.placements && Array.isArray(sub.placements) && sub.placements.length > 0) {
-        const p: Placement = {}
-        mapped.forEach((s) => (p[s.id] = 'unplaced'))
+        const placeMap: Record<string, QuadrantId> = {}
         sub.placements.forEach((pl) => {
-          if (pl.stakeholderId && pl.quadrant && (pl.quadrant === 'key-players' || pl.quadrant === 'keep-satisfied' || pl.quadrant === 'keep-informed' || pl.quadrant === 'monitor')) {
-            p[pl.stakeholderId] = pl.quadrant as QuadrantId
+          if (pl.stakeholderId && pl.quadrant && (QUADRANTS as readonly { id: string }[]).some((q) => q.id === pl.quadrant)) {
+            placeMap[pl.stakeholderId] = pl.quadrant as QuadrantId
           }
         })
-        setPlacement(p)
-        setSubmitted(true)
+        if (Object.keys(placeMap).length === mapped.length) {
+          const initial: Record<string, Answer> = {}
+          mapped.forEach((s) => (initial[s.id] = { influence: null, interest: null, notes: '' }))
+          setAnswers(initial)
+          setStep('reveal')
+          setPlacementForReveal(placeMap)
+          setSubmitted(true)
+        } else {
+          const initial: Record<string, Answer> = {}
+          mapped.forEach((s) => (initial[s.id] = { influence: null, interest: null, notes: '' }))
+          setAnswers(initial)
+        }
       } else {
-        const p: Placement = {}
-        mapped.forEach((s) => (p[s.id] = 'unplaced'))
-        setPlacement(p)
+        const initial: Record<string, Answer> = {}
+        mapped.forEach((s) => (initial[s.id] = { influence: null, interest: null, notes: '' }))
+        setAnswers(initial)
       }
     } catch {
       setError('Failed to load activity')
@@ -218,56 +113,72 @@ export function StakeholderMap({ activityId }: StakeholderMapProps) {
     fetchActivity()
   }, [fetchActivity])
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor)
-  )
+  const currentStakeholder = stakeholders[cardIndex] ?? null
+  const currentAnswer = currentStakeholder ? answers[currentStakeholder.id] : null
+  const canAdvance =
+    currentAnswer &&
+    currentAnswer.influence != null &&
+    currentAnswer.interest != null
+  const isLastCard = stakeholders.length > 0 && cardIndex === stakeholders.length - 1
 
-  const getStakeholder = useCallback(
-    (id: string) => stakeholders.find((s) => s.id === id),
-    [stakeholders]
-  )
-
-  const unplacedIds = stakeholders.filter((s) => placement[s.id] === 'unplaced').map((s) => s.id)
-  const allPlaced = stakeholders.length > 0 && unplacedIds.length === 0
-
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    setActiveId(String(event.active.id))
+  const setInfluence = useCallback((id: string, value: ScaleValue) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], influence: value, interest: prev[id]?.interest ?? null, notes: prev[id]?.notes ?? '' },
+    }))
   }, [])
 
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event
-      setActiveId(null)
-      if (!over) return
-      const stakeholderId = String(active.id)
-      let targetId = String(over.id)
-      const validQuadrants = QUADRANTS.map((q) => q.id)
-      if (targetId !== 'unplaced' && !validQuadrants.includes(targetId as QuadrantId)) {
-        targetId = placement[targetId] ?? 'unplaced'
-      }
-      if (targetId === 'unplaced' || validQuadrants.includes(targetId as QuadrantId)) {
-        setPlacement((prev) => ({ ...prev, [stakeholderId]: targetId as QuadrantId | 'unplaced' }))
-      }
-    },
-    [placement]
-  )
+  const setInterest = useCallback((id: string, value: ScaleValue) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], influence: prev[id]?.influence ?? null, interest: value, notes: prev[id]?.notes ?? '' },
+    }))
+  }, [])
+
+  const setNotes = useCallback((id: string, value: string) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], influence: prev[id]?.influence ?? null, interest: prev[id]?.interest ?? null, notes: value },
+    }))
+  }, [])
+
+  const handleNext = useCallback(() => {
+    if (isLastCard) {
+      const placement: Record<string, QuadrantId> = {}
+      stakeholders.forEach((s) => {
+        const a = answers[s.id]
+        if (a?.influence != null && a?.interest != null) {
+          placement[s.id] = answerToQuadrant(a.influence, a.interest)
+        }
+      })
+      setPlacementForReveal(placement)
+      setStep('reveal')
+    } else {
+      setCardIndex((i) => i + 1)
+    }
+  }, [stakeholders, answers, isLastCard])
 
   const handleSubmit = useCallback(async () => {
-    if (!allPlaced || !activityId) return
+    if (!activityId || Object.keys(placementForReveal).length === 0) return
     setSubmitting(true)
     setSubmitError(null)
     try {
+      const placements = Object.entries(placementForReveal).map(([stakeholderId, quadrant]) => {
+        const a = answers[stakeholderId]
+        const payload: { stakeholderId: string; quadrant: string; notes?: string } = {
+          stakeholderId,
+          quadrant,
+        }
+        if (typeof a?.notes === 'string' && a.notes.trim() !== '') {
+          payload.notes = a.notes.trim()
+        }
+        return payload
+      })
       const res = await fetch('/api/apps/stakeholder-map/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({
-          activity: activityId,
-          placements: Object.entries(placement)
-            .filter(([, q]) => q !== 'unplaced')
-            .map(([stakeholderId, quadrant]) => ({ stakeholderId, quadrant })),
-        }),
+        body: JSON.stringify({ activity: activityId, placements }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
@@ -275,23 +186,17 @@ export function StakeholderMap({ activityId }: StakeholderMapProps) {
         return
       }
       setSubmitted(true)
+      setStep('submitted')
     } catch {
       setSubmitError('Failed to submit')
     } finally {
       setSubmitting(false)
     }
-  }, [activityId, placement, allPlaced])
-
-  const backLink = (
-    <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-      ← Back to dashboard
-    </Link>
-  )
+  }, [activityId, placementForReveal, answers])
 
   if (loading) {
     return (
       <div className="space-y-4">
-        {backLink}
         <div className="flex min-h-[60vh] items-center justify-center">
           <p className="text-slate-600">Loading activity…</p>
         </div>
@@ -302,7 +207,6 @@ export function StakeholderMap({ activityId }: StakeholderMapProps) {
   if (error) {
     return (
       <div className="space-y-4">
-        {backLink}
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
           <p className="font-medium">Error</p>
           <p className="mt-1 text-sm">{error}</p>
@@ -314,7 +218,6 @@ export function StakeholderMap({ activityId }: StakeholderMapProps) {
   if (stakeholders.length === 0) {
     return (
       <div className="space-y-4">
-        {backLink}
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
           <p className="font-medium">No stakeholders in this activity</p>
           <p className="mt-1 text-sm">
@@ -326,107 +229,186 @@ export function StakeholderMap({ activityId }: StakeholderMapProps) {
     )
   }
 
-  if (submitted) {
+  if (step === 'intro') {
     return (
       <div className="space-y-6">
-        {backLink}
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
-          <p className="font-semibold">Map submitted</p>
-          <p className="mt-1 text-sm">Your stakeholder map has been saved.</p>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          {QUADRANTS.map((q) => (
-            <div key={q.id} className={`rounded-xl border-2 p-4 ${q.className}`}>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                {q.label}
-              </p>
-              <ul className="list-inside list-disc text-sm text-slate-700">
-                {stakeholders
-                  .filter((s) => placement[s.id] === q.id)
-                  .map((s) => (
-                    <li key={s.id}>
-                      {s.name}
-                      {s.title ? ` — ${s.title}` : ''}
-                    </li>
-                  ))}
-              </ul>
-            </div>
-          ))}
+        <div className="mx-auto max-w-lg rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+          <p className="text-slate-700">{INTRO_COPY}</p>
+          <div className="mt-6">
+            <button
+              type="button"
+              onClick={() => setStep('cards')}
+              className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-slate-700"
+            >
+              Begin
+            </button>
+          </div>
         </div>
       </div>
     )
   }
 
-  return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="space-y-4">
-        {backLink}
-        <div className="flex h-[calc(100vh-8rem)] gap-6">
-          <div
-            className="flex w-56 shrink-0 flex-col overflow-hidden rounded-xl border-2 border-slate-200 bg-slate-50/80"
-            aria-label="Unplaced stakeholders"
-          >
-            <p className="border-b border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
-              Stakeholders
-            </p>
-          <DroppableSidebar>
-            <SortableContext items={unplacedIds} strategy={verticalListSortingStrategy}>
-              <div className="flex flex-col gap-2">
-                {unplacedIds.map((id) => {
-                  const s = getStakeholder(id)
-                  return s ? (
-                    <SortableChip key={id} id={id} stakeholder={s} isPlaced={false} />
-                  ) : null
-                })}
-              </div>
-            </SortableContext>
-          </DroppableSidebar>
-        </div>
+  if (step === 'cards' && currentStakeholder && currentAnswer) {
+    const name = currentStakeholder.name
+    return (
+      <div className="space-y-6">
+        <p className="text-sm text-slate-500">
+          {cardIndex + 1} of {stakeholders.length}
+        </p>
+        <div className="mx-auto max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-slate-900">{name}</h2>
+            {currentStakeholder.title ? (
+              <p className="mt-1 text-sm text-slate-600">{currentStakeholder.title}</p>
+            ) : null}
+          </div>
 
-        <div className="flex flex-1 flex-col gap-4">
-          <div className="text-center text-xs text-slate-500">
-            <span className="font-medium">Interest</span> ← Low — — — High →
-          </div>
-          <div className="grid flex-1 grid-cols-2 grid-rows-2 gap-4">
-            {QUADRANTS.map((q) => (
-              <DroppableQuadrant
-                key={q.id}
-                quadrant={q}
-                stakeholders={stakeholders}
-                placement={placement}
-                getStakeholder={getStakeholder}
+          <div className="space-y-6">
+            <fieldset>
+              <legend className="text-sm font-medium text-slate-800">
+                How much influence does {name} have on the final decisions for this project?
+              </legend>
+              <div className="mt-2 flex gap-3">
+                {(['low', 'medium', 'high'] as const).map((value) => (
+                  <label key={value} className="flex cursor-pointer items-center gap-2">
+                    <input
+                      type="radio"
+                      name="influence"
+                      checked={currentAnswer.influence === value}
+                      onChange={() => setInfluence(currentStakeholder.id, value)}
+                      className="h-4 w-4 border-slate-300 text-slate-800 focus:ring-slate-500"
+                    />
+                    <span className="capitalize text-slate-700">{value}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend className="text-sm font-medium text-slate-800">
+                How much will this project affect {name}&apos;s day-to-day work?
+              </legend>
+              <div className="mt-2 flex gap-3">
+                {(['low', 'medium', 'high'] as const).map((value) => (
+                  <label key={value} className="flex cursor-pointer items-center gap-2">
+                    <input
+                      type="radio"
+                      name="interest"
+                      checked={currentAnswer.interest === value}
+                      onChange={() => setInterest(currentStakeholder.id, value)}
+                      className="h-4 w-4 border-slate-300 text-slate-800 focus:ring-slate-500"
+                    />
+                    <span className="capitalize text-slate-700">{value}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <div>
+              <label htmlFor="notes" className="block text-sm font-medium text-slate-800">
+                Anything worth noting about {name}? <span className="font-normal text-slate-500">(optional)</span>
+              </label>
+              <textarea
+                id="notes"
+                value={currentAnswer.notes}
+                onChange={(e) => setNotes(currentStakeholder.id, e.target.value)}
+                rows={3}
+                className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                placeholder="Optional notes…"
               />
-            ))}
+            </div>
           </div>
-          <p className="text-center text-xs text-slate-500">
-            ↑ Influence High — — — Low ↓
-          </p>
-          <div className="flex items-center justify-between border-t border-slate-200 pt-4">
-            <p className="text-sm text-slate-600">
-              {unplacedIds.length} of {stakeholders.length} placed
-            </p>
+
+          <div className="mt-8">
             <button
               type="button"
-              disabled={!allPlaced || submitting}
+              disabled={!canAdvance}
+              onClick={handleNext}
+              className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-slate-700 disabled:pointer-events-none disabled:opacity-50"
+            >
+              {isLastCard ? 'See map' : 'Next'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === 'reveal' || step === 'submitted') {
+    const getStakeholder = (id: string) => stakeholders.find((s) => s.id === id)
+    const showSubmit = step === 'reveal' && !submitted
+
+    return (
+      <div className="space-y-6">
+        {submitted ? (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
+            <p className="font-semibold">Map submitted</p>
+            <p className="mt-1 text-sm">Your stakeholder map has been saved.</p>
+          </div>
+        ) : null}
+        <div className="flex items-stretch gap-3">
+          <div
+            className="flex w-16 flex-shrink-0 flex-col items-center justify-between py-2 text-xs text-slate-500"
+            aria-hidden
+          >
+            <span>High</span>
+            <span className="font-medium">Influence</span>
+            <span>Low</span>
+          </div>
+          <div className="flex flex-1 flex-col gap-2">
+            <div
+              className="flex items-center justify-between text-xs text-slate-500"
+              aria-hidden
+            >
+              <span>Low</span>
+              <span className="font-medium">Interest</span>
+              <span>High</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {QUADRANTS.map((q) => (
+                <div key={q.id} className={`min-h-[120px] rounded-xl border-2 p-4 ${q.className}`}>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                    {q.label}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(placementForReveal)
+                      .filter(([, quad]) => quad === q.id)
+                      .map(([stakeholderId]) => {
+                        const s = getStakeholder(stakeholderId)
+                        return s ? (
+                          <div
+                            key={stakeholderId}
+                            className="flex flex-col rounded-lg border border-slate-300 bg-white px-3 py-2 text-left text-sm shadow-sm"
+                          >
+                            <span className="font-medium text-slate-900">{s.name}</span>
+                            {s.title ? (
+                              <span className="text-xs text-slate-600">{s.title}</span>
+                            ) : null}
+                          </div>
+                        ) : null
+                      })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        {showSubmit ? (
+          <div>
+            <button
+              type="button"
+              disabled={submitting}
               onClick={handleSubmit}
               className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-slate-700 disabled:pointer-events-none disabled:opacity-50"
             >
               {submitting ? 'Submitting…' : 'Lock In & Submit'}
             </button>
           </div>
-          {submitError ? <p className="text-sm text-red-600">{submitError}</p> : null}
-        </div>
-        </div>
+        ) : null}
+        {submitError ? <p className="text-sm text-red-600">{submitError}</p> : null}
       </div>
+    )
+  }
 
-      <DragOverlay>
-        {activeId ? (() => {
-          const s = getStakeholder(activeId)
-          return s ? (
-            <StakeholderChip stakeholder={s} isPlaced={placement[activeId] !== 'unplaced'} />
-          ) : null
-        })() : null}
-      </DragOverlay>
-    </DndContext>
-  )
+  return null
 }

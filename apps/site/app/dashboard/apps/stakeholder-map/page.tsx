@@ -12,7 +12,7 @@ export default async function StakeholderMapAppPage() {
       <div className="mx-auto max-w-6xl space-y-4">
         <h1 className="text-2xl font-semibold text-slate-900">Stakeholder Map</h1>
         <p className="text-sm text-slate-600">
-          Drag stakeholders from the list into the quadrants by influence and interest.
+          Map each stakeholder by influence and interest, then see your 2×2 matrix.
         </p>
         <Suspense
           fallback={

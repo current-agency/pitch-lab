@@ -1,7 +1,7 @@
 'use client'
 
+import { CircleDollarSign } from 'lucide-react'
 import { use, useCallback, useEffect, useState } from 'react'
-import Link from 'next/link'
 import { Button, cn } from '@repo/ui'
 import { validate } from '@/components/apps/audience-poker/validate'
 import type { AudiencePokerActivity } from '@/components/apps/audience-poker/types'
@@ -116,9 +116,6 @@ export function AudiencePokerActivityClient({ params }: { params: Promise<{ id: 
   if (loading) {
     return (
       <div className="mx-auto max-w-2xl space-y-4">
-        <Link href="/dashboard" className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-          ← Back to dashboard
-        </Link>
         <div className="flex min-h-[60vh] items-center justify-center">
           <p className="text-slate-600">Loading…</p>
         </div>
@@ -129,9 +126,6 @@ export function AudiencePokerActivityClient({ params }: { params: Promise<{ id: 
   if (error || !activity) {
     return (
       <div className="mx-auto max-w-2xl">
-        <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-          ← Back to dashboard
-        </Link>
         <h1 className="text-2xl font-bold text-slate-900">Audience Poker</h1>
         <p className="mt-4 text-red-600">{error ?? 'Activity not found.'}</p>
       </div>
@@ -146,9 +140,6 @@ export function AudiencePokerActivityClient({ params }: { params: Promise<{ id: 
     const submittedAt = existingSubmission?.submittedAt
     return (
       <div className="mx-auto max-w-2xl">
-        <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-          ← Back to dashboard
-        </Link>
         <h1 className="text-2xl font-bold text-slate-900">{activity?.title ?? 'Audience Poker'}</h1>
         <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
           <p className="font-semibold">Your submission</p>
@@ -165,13 +156,13 @@ export function AudiencePokerActivityClient({ params }: { params: Promise<{ id: 
               className="flex flex-col rounded-2xl border-2 border-slate-200 bg-white p-5 shadow-sm"
             >
               <h3 className="font-semibold text-slate-900">{item.audienceLabel}</h3>
-              <p className="mt-2 text-xl font-bold tabular-nums text-slate-900">{item.chips} chips</p>
+              <p className="mt-2 flex items-center gap-1.5 text-xl font-bold tabular-nums text-slate-900">
+                <CircleDollarSign className="h-5 w-5 shrink-0 text-[#035C4B]" aria-hidden />
+                {item.chips}
+              </p>
             </li>
           ))}
         </ul>
-        <Link href="/dashboard" className="mt-8 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-          ← Back to dashboard
-        </Link>
       </div>
     )
   }
@@ -194,9 +185,6 @@ export function AudiencePokerActivityClient({ params }: { params: Promise<{ id: 
 
   return (
     <div className="mx-auto max-w-2xl">
-      <Link href="/dashboard" className="mb-4 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-        ← Back to dashboard
-      </Link>
       <h1 className="text-2xl font-bold text-slate-900">{activity.title}</h1>
       {instructionsText ? (
         <div className="mt-4 rounded-lg bg-white p-4 shadow-sm text-slate-700">
@@ -223,7 +211,7 @@ export function AudiencePokerActivityClient({ params }: { params: Promise<{ id: 
           {result.chipsRemaining > 0 ? (
             <div className="flex flex-wrap gap-1.5" aria-hidden>
               {Array.from({ length: result.chipsRemaining }, (_, i) => (
-                <span key={i} className="h-4 w-4 shrink-0 rounded-full border-2 border-amber-600/50 bg-amber-400 shadow-sm" title="Chip" />
+                <CircleDollarSign key={i} className="h-5 w-5 shrink-0 text-[#035C4B]" aria-hidden />
               ))}
             </div>
           ) : null}
@@ -257,7 +245,7 @@ export function AudiencePokerActivityClient({ params }: { params: Promise<{ id: 
               {(allocations[index] ?? 0) > 0 ? (
                 <div className="flex flex-wrap gap-2" aria-hidden>
                   {Array.from({ length: allocations[index] ?? 0 }, (_, i) => (
-                    <span key={i} className="h-4 w-4 shrink-0 rounded-full border-2 border-amber-600/50 bg-amber-400 shadow-sm" title="Chip" />
+                    <CircleDollarSign key={i} className="h-5 w-5 shrink-0 text-[#035C4B]" aria-hidden />
                   ))}
                 </div>
               ) : null}

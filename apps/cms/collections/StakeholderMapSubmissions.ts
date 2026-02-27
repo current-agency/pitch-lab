@@ -72,6 +72,11 @@ export const StakeholderMapSubmissions: CollectionConfig = {
           options: [...QUADRANT_OPTIONS],
           admin: { description: 'Quadrant in the matrix' },
         },
+        {
+          name: 'notes',
+          type: 'textarea',
+          admin: { description: 'Optional notes about this stakeholder' },
+        },
       ],
     },
   ],

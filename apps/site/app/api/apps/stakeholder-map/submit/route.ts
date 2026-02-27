@@ -8,7 +8,7 @@ import { createLogger } from '@repo/env'
 
 const log = createLogger('stakeholder-map/submit')
 
-type Placement = { stakeholderId: string; quadrant: string }
+type Placement = { stakeholderId: string; quadrant: string; notes?: string }
 
 export async function POST(request: Request) {
   const cookieStore = await cookies()
@@ -51,7 +51,11 @@ export async function POST(request: Request) {
     activity: activityId,
     submittedBy: userId,
     submittedAt: new Date().toISOString(),
-    placements: placements.map((p) => ({ stakeholderId: p.stakeholderId, quadrant: p.quadrant })),
+    placements: placements.map((p) => ({
+      stakeholderId: p.stakeholderId,
+      quadrant: p.quadrant,
+      ...(typeof p.notes === 'string' && p.notes.trim() !== '' && { notes: p.notes.trim() }),
+    })),
   }
 
   try {
