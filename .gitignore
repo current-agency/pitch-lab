@@ -36,3 +36,4 @@ csv-uploads
 
 # Misc
 *.tsbuildinfo
+sendgrid.env
