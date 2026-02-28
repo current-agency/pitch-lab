@@ -33,5 +33,11 @@ export async function sendEmail(msg: SendGridMessage): Promise<void> {
   if (!apiKey) {
     throw new Error('SENDGRID_API_KEY is not set')
   }
-  await sgMail.send(msg)
+  await sgMail.send({
+    to: msg.to,
+    from: msg.from,
+    subject: msg.subject,
+    text: msg.text ?? '',
+    ...(msg.html && { html: msg.html }),
+  } as Parameters<typeof sgMail.send>[0])
 }
